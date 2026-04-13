@@ -1,0 +1,135 @@
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { Mail, Lock } from "lucide-react";
+
+import yuyu from "../../assets/yuyu.png";
+
+const colors = {
+  accent: "#FF4D8D",
+  border: "#E2E8F0",
+};
+
+export default function Login() {
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  return (
+    <div className="min-h-screen flex bg-white">
+
+      {/* LEFT SIDE */}
+      <div className="hidden md:flex w-1/2 relative items-center justify-center bg-gradient-to-br from-slate-50 to-pink-50">
+
+        <div className="absolute w-80 h-80 bg-pink-200 blur-3xl opacity-30 rounded-full top-20 left-20" />
+        <div className="absolute w-96 h-96 bg-blue-200 blur-3xl opacity-20 rounded-full bottom-10 right-10" />
+
+        <div className="text-center max-w-md">
+          <img src={yuyu} alt="Yuyu AI" className="w-[300px] mx-auto drop-shadow-2xl" />
+
+          <h2 className="text-3xl font-semibold mt-8 text-slate-800">
+            Welcome Back
+          </h2>
+
+          <p className="text-slate-500 mt-4 text-sm">
+            Continue your family learning journey in a safe AI-powered environment.
+          </p>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="w-full md:w-1/2 flex items-center justify-center px-6">
+
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+
+          {/* HEADER */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-slate-900">
+              Log in
+            </h1>
+
+            <p className="text-sm text-slate-500 mt-2">
+              Access your parent dashboard and child learning profiles.
+            </p>
+          </div>
+
+          {/* FORM CARD */}
+          <div className="border border-slate-200 rounded-2xl p-6 shadow-sm">
+
+            <form className="space-y-5">
+
+              {/* Email */}
+              <div>
+                <label className="text-xs text-slate-500">Email</label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full pl-10 p-3 border border-slate-200 rounded-lg outline-none focus:border-pink-400"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="text-xs text-slate-500">Password</label>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="w-full pl-10 p-3 border border-slate-200 rounded-lg outline-none focus:border-pink-400"
+                  />
+                </div>
+              </div>
+
+              {/* Forgot Password */}
+              <div className="flex justify-end">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-pink-500 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              {/* BUTTON */}
+              <button
+                type="submit"
+                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-pink-400"
+              >
+                Log in
+              </button>
+            </form>
+          </div>
+
+          {/* FOOTER */}
+          <p className="text-sm text-center mt-6 text-slate-500">
+            Don’t have an account?{" "}
+            <Link to="/register" className="text-pink-500 font-medium">
+              Create account
+            </Link>
+          </p>
+
+        </motion.div>
+      </div>
+    </div>
+  );
+}

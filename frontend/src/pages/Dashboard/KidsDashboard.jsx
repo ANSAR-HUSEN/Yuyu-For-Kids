@@ -90,7 +90,6 @@ const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
     softPink: '#FF9EAA',
     mint: '#B5EAD7',
     peach: '#FFDAC1',
-    lavender: '#C4B5FD',
   };
 
   const actualColor = colorMap[color] || color;
@@ -173,7 +172,7 @@ const Dashboard = () => {
     { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3 },
     { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35 },
     { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4 },
-    { icon: Palette, title: "Creativity Zone", color: "lavender", delay: 0.45 }
+    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45 }
   ];
 
   const navItems = [

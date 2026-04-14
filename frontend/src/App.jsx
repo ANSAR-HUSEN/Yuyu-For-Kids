@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
+import ParentDashboard from "./pages/Dashboard/ParentDashboard";
+import KidsDashboard from "./pages/Dashboard/KidsDashboard";
 import LandingPage from "./pages/LandingPage";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
@@ -14,7 +15,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
 
         {/* Auth Pages */}
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard" element={<ParentDashboard />} />
+                <Route path="/kids-dashboard" element={<KidsDashboard />} />
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />

@@ -6,6 +6,7 @@ import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/Profile";
+import ChildLogin from "./components/ChildLogin";
 function App() {
   return (
     <Router>
@@ -22,7 +23,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword/>} />
-                   
+                        <Route path="/child-login" element={<ChildLogin />} />
 
 
 

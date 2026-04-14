@@ -206,11 +206,13 @@ const ParentDashboard = () => {
             <Users size={18} />
             <span className="text-sm font-medium hidden md:inline">Kid Mode</span>
           </motion.button>
-          
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-softPink/20 transition-colors">
-            <LogOut size={18} className="text-warmBrown" />
-            <span className="text-sm font-medium text-warmBrown hidden md:inline">Logout</span>
-          </button>
+       <button 
+  onClick={() => navigate('/')}
+  className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-softPink/20 transition-colors"
+>
+  <LogOut size={18} className="text-warmBrown" />
+  <span className="text-sm font-medium text-warmBrown hidden md:inline">Logout</span>
+</button>
         </div>
       </nav>
 

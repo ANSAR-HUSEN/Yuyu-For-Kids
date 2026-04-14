@@ -107,7 +107,7 @@ export default function Register() {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-pink-400"
+                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-softPink"
               >
                 Create account
               </button>

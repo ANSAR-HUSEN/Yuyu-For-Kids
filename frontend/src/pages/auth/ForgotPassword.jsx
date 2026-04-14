@@ -5,10 +5,6 @@ import { Mail } from "lucide-react";
 
 import yuyu from "../../assets/yuyu.png";
 
-const colors = {
-  accent: "#FF4D8D",
-};
-
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
 
@@ -18,10 +14,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex bg-white">
-
-      {/* LEFT SIDE (Brand) */}
       <div className="hidden md:flex w-1/2 relative items-center justify-center bg-gradient-to-br from-slate-50 to-pink-50">
-
         <div className="absolute w-80 h-80 bg-pink-200 blur-3xl opacity-30 rounded-full top-20 left-20" />
         <div className="absolute w-96 h-96 bg-blue-200 blur-3xl opacity-20 rounded-full bottom-10 right-10" />
 
@@ -37,38 +30,30 @@ export default function ForgotPassword() {
           </h2>
 
           <p className="text-slate-500 mt-4 text-sm">
-            We’ll send a secure link to your email to reset your account password and restore access safely.
+            We'll send a secure link to your email to reset your account password and restore access safely.
           </p>
         </div>
       </div>
 
-      {/* RIGHT SIDE (FORM) */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-6">
-
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-
-          {/* HEADER */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-slate-900">
               Forgot password
             </h1>
 
             <p className="text-sm text-slate-500 mt-2">
-              Enter your email and we’ll send you a reset link.
+              Enter your email and we'll send you a reset link.
             </p>
           </div>
 
-          {/* FORM CARD */}
           <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white">
-
             <form className="space-y-5">
-
-              {/* Email */}
               <div>
                 <label className="text-xs text-slate-500">Email</label>
                 <div className="relative mt-1">
@@ -84,7 +69,6 @@ export default function ForgotPassword() {
                 </div>
               </div>
 
-              {/* BUTTON */}
               <button
                 type="submit"
                 className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-pink-400"
@@ -94,14 +78,12 @@ export default function ForgotPassword() {
             </form>
           </div>
 
-          {/* FOOTER */}
           <p className="text-sm text-center mt-6 text-slate-500">
             Remember your password?{" "}
             <Link to="/login" className="text-pink-500 font-medium">
               Log in
             </Link>
           </p>
-
         </motion.div>
       </div>
     </div>

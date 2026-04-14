@@ -5,13 +5,6 @@ import { User, Mail, Lock } from "lucide-react";
 
 import yuyu from "../../assets/yuyu.png";
 
-const colors = {
-  primary: "#0F172A",
-  accent: "#FF4D8D",
-  light: "#F8FAFC",
-  border: "#E2E8F0",
-};
-
 export default function Register() {
   const [form, setForm] = useState({
     name: "",
@@ -25,12 +18,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex bg-white">
-
-      {/* LEFT - BRAND / ILLUSTRATION */}
       <div className="hidden md:flex w-1/2 relative items-center justify-center bg-gradient-to-br from-slate-50 to-pink-50">
-
-      
-
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -53,17 +41,13 @@ export default function Register() {
         </motion.div>
       </div>
 
-      {/* RIGHT - FORM */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-6">
-
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-slate-900">
               Create your account
@@ -74,12 +58,8 @@ export default function Register() {
             </p>
           </div>
 
-          {/* FORM CARD */}
           <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white">
-
             <form className="space-y-5">
-
-              {/* Name */}
               <div>
                 <label className="text-xs text-slate-500">Full name</label>
                 <div className="relative mt-1">
@@ -95,7 +75,6 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="text-xs text-slate-500">Email</label>
                 <div className="relative mt-1">
@@ -111,7 +90,6 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="text-xs text-slate-500">Password</label>
                 <div className="relative mt-1">
@@ -127,25 +105,21 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Button */}
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90                bg-pink-400
-"
+                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-pink-400"
               >
                 Create account
               </button>
             </form>
           </div>
 
-          {/* Footer */}
           <p className="text-sm text-center mt-6 text-slate-500">
             Already have an account?{" "}
             <Link to="/login" className="text-pink-500 font-medium">
               Log in
             </Link>
           </p>
-
         </motion.div>
       </div>
     </div>

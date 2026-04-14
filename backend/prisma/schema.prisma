@@ -1,13 +1,66 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
+// prisma/schema.prisma
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL") // Put this back!
+}
+
+// ... rest of your models (Parent, Child, etc.)
+
+model Parent {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  children  Child[]
+  createdAt DateTime @default(now())
+}
+
+model Child {
+  id             String     @id @default(uuid())
+  name           String
+  age            Int
+  avatar         String?    
+  totalPoints    Int        @default(0)
+  
+  parentId       String
+  parent         Parent     @relation(fields: [parentId], references: [id])
+  
+  progress       Progress[]
+  rewards        Reward[]
+  chatHistory    ChatLog[]
+
+  createdAt      DateTime   @default(now())
+}
+
+model Progress {
+  id          String   @id @default(uuid())
+  skillType   String   
+  level       Int      @default(1)
+  exp         Int      @default(0)
+  
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id])
+  
+  updatedAt   DateTime @updatedAt
+}
+
+model Reward {
+  id          String   @id @default(uuid())
+  badgeName   String
+  unlockedAt  DateTime @default(now())
+  
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id])
+}
+
+model ChatLog {
+  id        String   @id @default(uuid())
+  role      String   
+  content   String
+  childId   String
+  child       Child    @relation(fields: [childId], references: [id])
+  createdAt DateTime @default(now())
 }

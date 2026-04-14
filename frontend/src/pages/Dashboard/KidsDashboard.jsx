@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, BookOpen, Puzzle, Palette, Zap, TrendingUp,
-  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X
-, PartyPopper } from 'lucide-react';
+  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardCard = ({ icon: Icon, title, value, color, delay }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -158,6 +159,7 @@ const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const childName = "hany";
   const [activeNav, setActiveNav] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -183,6 +185,10 @@ const Dashboard = () => {
     { id: 'draw', icon: Palette, label: 'Draw' },
     { id: 'progress', icon: TrendingUp, label: 'Progress' }
   ];
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream">
@@ -213,9 +219,12 @@ const Dashboard = () => {
             <Star size={14} className="text-gold fill-gold" />
             <span className="font-bold text-darkBrown text-sm">1,234 XP</span>
           </div>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-peach to-orange-300 flex items-center justify-center shadow-md border-2 border-white">
+          <button 
+            onClick={handleProfileClick}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-peach to-orange-300 flex items-center justify-center shadow-md border-2 border-white transition-transform hover:scale-105 cursor-pointer"
+          >
             <User size={20} className="text-darkBrown" />
-          </div>
+          </button>
         </div>
       </nav>
 

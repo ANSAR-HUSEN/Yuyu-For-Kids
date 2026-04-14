@@ -6,7 +6,6 @@ import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/Profile";
-
 function App() {
   return (
     <Router>
@@ -23,6 +22,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword/>} />
+                   
+
 
 
       </Routes>

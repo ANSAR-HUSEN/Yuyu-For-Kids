@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const authRoutes = require('./routes/authRoutes'); // Add this
 const childRoutes = require('./routes/childRoutes');
+const storyRoutes = require('./routes/storyRoutes'); // 1. Import it
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/children', childRoutes); // Add this
+app.use('/api/stories', storyRoutes); // 2. Use it
 
 module.exports = app;

@@ -5,11 +5,6 @@ import { Mail, Lock } from "lucide-react";
 
 import yuyu from "../../assets/yuyu.png";
 
-const colors = {
-  accent: "#FF4D8D",
-  border: "#E2E8F0",
-};
-
 export default function Login() {
   const [form, setForm] = useState({
     email: "",
@@ -22,10 +17,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white">
-
-      {/* LEFT SIDE */}
       <div className="hidden md:flex w-1/2 relative items-center justify-center bg-gradient-to-br from-slate-50 to-pink-50">
-
         <div className="absolute w-80 h-80 bg-pink-200 blur-3xl opacity-30 rounded-full top-20 left-20" />
         <div className="absolute w-96 h-96 bg-blue-200 blur-3xl opacity-20 rounded-full bottom-10 right-10" />
 
@@ -42,17 +34,13 @@ export default function Login() {
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
       <div className="w-full md:w-1/2 flex items-center justify-center px-6">
-
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-
-          {/* HEADER */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-slate-900">
               Log in
@@ -63,12 +51,8 @@ export default function Login() {
             </p>
           </div>
 
-          {/* FORM CARD */}
           <div className="border border-slate-200 rounded-2xl p-6 shadow-sm">
-
             <form className="space-y-5">
-
-              {/* Email */}
               <div>
                 <label className="text-xs text-slate-500">Email</label>
                 <div className="relative mt-1">
@@ -84,7 +68,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="text-xs text-slate-500">Password</label>
                 <div className="relative mt-1">
@@ -100,7 +83,6 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Forgot Password */}
               <div className="flex justify-end">
                 <Link
                   to="/forgot-password"
@@ -110,7 +92,6 @@ export default function Login() {
                 </Link>
               </div>
 
-              {/* BUTTON */}
               <button
                 type="submit"
                 className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-pink-400"
@@ -120,14 +101,12 @@ export default function Login() {
             </form>
           </div>
 
-          {/* FOOTER */}
           <p className="text-sm text-center mt-6 text-slate-500">
-            Don’t have an account?{" "}
+            Don't have an account?{" "}
             <Link to="/register" className="text-pink-500 font-medium">
               Create account
             </Link>
           </p>
-
         </motion.div>
       </div>
     </div>

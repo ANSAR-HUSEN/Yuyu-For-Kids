@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Baby, Smile, Sparkles, Star,  Lock, AlertCircle, X,Crown } from 'lucide-react';
+import { ArrowRight, Baby, Smile, Star,  Lock, AlertCircle, X,Crown } from 'lucide-react';
 
 const ChildLogin = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const ChildLogin = () => {
   }, []);
 
   const getAvatarIcon = (avatarName) => {
-    const icons = { Baby, Smile, Sparkles, Star };
+    const icons = { Baby, Smile, Star };
     return icons[avatarName] || Baby;
   };
 
@@ -93,7 +93,7 @@ const ChildLogin = () => {
             <div className="w-20 h-20 rounded-full bg-softPink flex items-center justify-center mx-auto mb-4 shadow-lg">
 <Crown size={40} className="text-white" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-darkBrown">Who's Learning Today?</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-darkBrown">Who's with Yuyu today? </h1>
             <p className="text-warmBrown mt-2">Select your profile to continue</p>
           </div>
 

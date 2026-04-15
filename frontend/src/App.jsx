@@ -7,6 +7,7 @@ import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/Profile";
 import ChildLogin from "./components/ChildLogin";
+import YuyuNumberPop from "./components/Games/YuyuNumberPop";
 function App() {
   return (
     <Router>
@@ -14,6 +15,8 @@ function App() {
 
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
+                <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
+
 
         {/*Pages */}
                 <Route path="/dashboard" element={<ParentDashboard />} />

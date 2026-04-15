@@ -158,7 +158,7 @@ const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
   );
 };
 
-const Dashboard = () => {
+const KidsDashboard = () => {
   const navigate = useNavigate();
   const childName = "hany";
   const [activeNav, setActiveNav] = useState('home');
@@ -217,7 +217,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-softPink/10 rounded-full px-3 py-1.5 border border-softPink/30">
             <Star size={14} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown text-sm">1,234 XP</span>
+            <span claassName="font-bold text-darkBrown text-sm">1,234 XP</span>
           </div>
           <button 
             onClick={handleProfileClick}
@@ -386,4 +386,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default KidsDashboard;

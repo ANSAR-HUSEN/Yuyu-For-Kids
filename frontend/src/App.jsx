@@ -8,7 +8,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/Profile";
 import ChildLogin from "./components/ChildLogin";
 import YuyuNumberPop from "./components/Games/YuyuNumberPop";
-import YuyuShapeSorter from "./components/Games/YuyuShapeSorter";
+import YuyuShapeSorter from "./components/";
 
 function App() {
   return (

@@ -23,13 +23,12 @@ const ParentDashboard = () => {
   const [formData, setFormData] = useState({
     name: '',
     age: '',
-    pin: ''
   });
   const [formErrors, setFormErrors] = useState({});
 
   const [children, setChildren] = useState([
-    { id: 1, name: "Hany", age: 7, pin: "1234", xp: 1234, level: 5, streak: 7, avatar: "Baby", storiesRead: 12, gamesPlayed: 24, quizzesTaken: 15, badgesEarned: 8 },
-    { id: 2, name: "Emma", age: 5, pin: "5678", xp: 890, level: 3, streak: 4, avatar: "Smile", storiesRead: 8, gamesPlayed: 15, quizzesTaken: 10, badgesEarned: 5 }
+    { id: 1, name: "Hany", age: 7, xp: 1234, level: 5, streak: 7, avatar: "Baby", storiesRead: 12, gamesPlayed: 24, quizzesTaken: 15, badgesEarned: 8 },
+    { id: 2, name: "Emma", age: 5, xp: 890, level: 3, streak: 4, avatar: "Smile", storiesRead: 8, gamesPlayed: 15, quizzesTaken: 10, badgesEarned: 5 }
   ]);
 
   const parentInfo = {
@@ -39,12 +38,11 @@ const ParentDashboard = () => {
   };
 
   const tips = [
-    { id: 1, title: "PIN Protection", icon: Lock, color: "#FF9EAA", tip: "Each child has a unique 4-digit PIN. This ensures they can only access their own learning profile." },
-    { id: 2, title: "Learning Streaks", icon: Flame, color: "#FFB347", tip: "Daily learning builds habits! Encourage your child to log in every day to maintain their streak." },
-    { id: 3, title: "Progress Tracking", icon: BarChart3, color: "#B5EAD7", tip: "Check the Progress tab weekly to see which subjects your child excels at or needs help with." },
-    { id: 4, title: "Reward System", icon: Gift, color: "#FFDAC1", tip: "Celebrate achievements! When your child earns badges, celebrate their success to boost confidence." },
-    { id: 5, title: "Screen Time Balance", icon: Shield, color: "#C4B5FD", tip: "Set daily limits. 30-45 minutes of learning per day is the sweet spot for young minds." },
-    { id: 6, title: "Parent Involvement", icon: Heart, color: "#FF9EAA", tip: "Ask your child what they learned today! Talking about their achievements reinforces learning." }
+    { id: 1, title: "Learning Streaks", icon: Flame, color: "#FFB347", tip: "Daily learning builds habits! Encourage your child to log in every day to maintain their streak." },
+    { id: 2, title: "Progress Tracking", icon: BarChart3, color: "#B5EAD7", tip: "Check the Progress tab weekly to see which subjects your child excels at or needs help with." },
+    { id: 3, title: "Reward System", icon: Gift, color: "#FFDAC1", tip: "Celebrate achievements! When your child earns badges, celebrate their success to boost confidence." },
+    { id: 4, title: "Screen Time Balance", icon: Shield, color: "#C4B5FD", tip: "Set daily limits. 30-45 minutes of learning per day is the sweet spot for young minds." },
+    { id: 5, title: "Parent Involvement", icon: Heart, color: "#FF9EAA", tip: "Ask your child what they learned today! Talking about their achievements reinforces learning." }
   ];
 
   const navItems = [
@@ -72,8 +70,6 @@ const ParentDashboard = () => {
     if (!formData.age) errors.age = "Age is required";
     else if (parseInt(formData.age) < 3) errors.age = "Age must be at least 3";
     else if (parseInt(formData.age) > 18) errors.age = "Age must be less than 18";
-    if (!formData.pin) errors.pin = "PIN is required";
-    else if (!/^\d{4}$/.test(formData.pin)) errors.pin = "PIN must be exactly 4 digits";
     return errors;
   };
 
@@ -88,7 +84,6 @@ const ParentDashboard = () => {
       id: Date.now(),
       name: formData.name,
       age: parseInt(formData.age),
-      pin: formData.pin,
       avatar: avatarNames[children.length % avatarNames.length],
       xp: 0,
       level: 1,
@@ -115,7 +110,7 @@ const ParentDashboard = () => {
 
     const updatedChildren = children.map(child => 
       child.id === editingChild.id 
-        ? { ...child, name: formData.name, age: parseInt(formData.age), pin: formData.pin }
+        ? { ...child, name: formData.name, age: parseInt(formData.age) }
         : child
     );
     setChildren(updatedChildren);
@@ -144,14 +139,13 @@ const ParentDashboard = () => {
     setFormData({
       name: child.name,
       age: child.age.toString(),
-      pin: child.pin
     });
     setFormErrors({});
     setShowAddChildModal(true);
   };
 
   const resetForm = () => {
-    setFormData({ name: '', age: '', pin: '' });
+    setFormData({ name: '', age: '' });
     setFormErrors({});
   };
 
@@ -206,13 +200,13 @@ const ParentDashboard = () => {
             <Users size={18} />
             <span className="text-sm font-medium hidden md:inline">Kid Mode</span>
           </motion.button>
-       <button 
-  onClick={() => navigate('/')}
-  className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-softPink/20 transition-colors"
->
-  <LogOut size={18} className="text-warmBrown" />
-  <span className="text-sm font-medium text-warmBrown hidden md:inline">Logout</span>
-</button>
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-softPink/20 transition-colors"
+          >
+            <LogOut size={18} className="text-warmBrown" />
+            <span className="text-sm font-medium text-warmBrown hidden md:inline">Logout</span>
+          </button>
         </div>
       </nav>
 
@@ -386,10 +380,6 @@ const ParentDashboard = () => {
                         </div>
                         
                         <div className="mt-4 pt-4 border-t border-peach">
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-warmBrown">PIN Code:</span>
-                            <span className="font-mono font-bold text-darkBrown">{child.pin}</span>
-                          </div>
                           <div className="flex justify-between text-sm mb-2">
                             <span className="text-warmBrown">Total XP:</span>
                             <span className="font-bold text-darkBrown">{child.xp} points</span>
@@ -585,7 +575,7 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Add/Edit Child Modal */}
+      {/* Add/Edit Child Modal - PIN removed */}
       <AnimatePresence>
         {showAddChildModal && (
           <>
@@ -650,22 +640,6 @@ const ParentDashboard = () => {
                       }`}
                     />
                     {formErrors.age && <p className="text-red-500 text-xs mt-1">{formErrors.age}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-darkBrown mb-2">4-Digit PIN</label>
-                    <input
-                      type="password"
-                      value={formData.pin}
-                      onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="****"
-                      maxLength="4"
-                      className={`w-full px-4 py-3 rounded-xl border-2 focus:outline-none focus:border-softPink transition-colors font-mono text-center text-lg tracking-widest ${
-                        formErrors.pin ? 'border-red-400 bg-red-50' : 'border-peach bg-white'
-                      }`}
-                    />
-                    {formErrors.pin && <p className="text-red-500 text-xs mt-1">{formErrors.pin}</p>}
-                    <p className="text-xs text-warmBrown mt-2">This PIN will be used by your child to access their profile</p>
                   </div>
 
                   <div className="flex gap-3 pt-4">

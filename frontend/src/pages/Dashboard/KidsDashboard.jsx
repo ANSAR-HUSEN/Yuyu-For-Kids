@@ -5,8 +5,9 @@ import {
   Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import GamesRouter from './KidsGamesRouter';
 
-const DashboardCard = ({ icon: Icon, title, value, color, delay }) => {
+const DashboardCard = ({ icon: Icon, title, value, color, delay, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const colorMap = {
@@ -25,6 +26,7 @@ const DashboardCard = ({ icon: Icon, title, value, color, delay }) => {
       transition={{ duration: 0.4, delay: delay || 0 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      onClick={onClick}
     >
       <motion.div
         className="relative overflow-hidden rounded-3xl p-6 shadow-md bg-cream"
@@ -84,7 +86,7 @@ const DashboardCard = ({ icon: Icon, title, value, color, delay }) => {
   );
 };
 
-const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
+const QuickActionCard = ({ icon: Icon, title, color, delay, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const colorMap = {
@@ -103,6 +105,7 @@ const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
       transition={{ duration: 0.4, delay: delay || 0 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      onClick={onClick}
     >
       <motion.div
         className="relative overflow-hidden rounded-3xl p-6 shadow-md bg-cream"
@@ -158,23 +161,23 @@ const QuickActionCard = ({ icon: Icon, title, color, delay }) => {
   );
 };
 
-const Dashboard = () => {
+const KidsDashboard = () => {
   const navigate = useNavigate();
   const childName = "hany";
   const [activeNav, setActiveNav] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const statsCards = [
-    { icon: Puzzle, title: "Games Played", value: "24", color: "softPink", delay: 0 },
-    { icon: BookOpen, title: "Stories Read", value: "12", color: "mint", delay: 0.1 },
-    { icon: Trophy, title: "Badges Earned", value: "8", color: "gold", delay: 0.2 }
+    { icon: Puzzle, title: "Games Played", value: "24", color: "softPink", delay: 0, onClick: () => setActiveNav('games') },
+    { icon: BookOpen, title: "Stories Read", value: "12", color: "mint", delay: 0.1, onClick: () => setActiveNav('stories') },
+    { icon: Trophy, title: "Badges Earned", value: "8", color: "gold", delay: 0.2, onClick: () => setActiveNav('progress') }
   ];
 
   const quickActions = [
-    { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3 },
-    { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35 },
-    { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4 },
-    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45 }
+    { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3, onClick: () => setActiveNav('games') },
+    { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35, onClick: () => setActiveNav('stories') },
+    { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4, onClick: () => setActiveNav('quiz') },
+    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => setActiveNav('draw') }
   ];
 
   const navItems = [
@@ -190,12 +193,85 @@ const Dashboard = () => {
     navigate('/profile');
   };
 
+  const renderMainContent = () => {
+    if (activeNav === 'games') {
+      return (
+        <GamesRouter 
+          childName={childName}
+          onBack={() => setActiveNav('home')}
+        />
+      );
+    }
+
+    if (activeNav === 'home') {
+      return (
+        <div className="flex-1 px-4 md:px-12 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>
+                  Welcome back, {childName}! <PartyPopper size={32} className="text-softPink fill-softPink ml-2 inline-block" />
+                </h1>
+                <p className="text-warmBrown mt-1 text-sm md:text-base">Ready for today's magical learning adventure?</p>
+              </div>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex items-center gap-1 bg-blush px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-peach">
+                  <Flame size={14} className="text-orange-500" />
+                  <span className="text-xs md:text-sm font-bold text-darkBrown">7 day streak</span>
+                </div>
+                <div className="flex items-center gap-1 bg-gold/20 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-gold/30">
+                  <Trophy size={14} className="text-gold" />
+                  <span className="text-xs md:text-sm font-bold text-darkBrown">Level 5</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            {statsCards.map((card, index) => (
+              <DashboardCard key={index} {...card} />
+            ))}
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-darkBrown mb-4" style={{ fontFamily: "'Comic Neue', cursive" }}>
+              Quick Launch
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              {quickActions.map((action, index) => (
+                <QuickActionCard key={index} {...action} />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 px-4 md:px-12 lg:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-20"
+        >
+          <h2 className="text-3xl font-bold text-darkBrown mb-4">Coming Soon!</h2>
+          <p className="text-warmBrown">This section is under construction.</p>
+        </motion.div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream">
       <div 
         className="fixed inset-0 pointer-events-none opacity-20"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3C%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat',
           backgroundSize: '200px',
         }}
@@ -336,54 +412,10 @@ const Dashboard = () => {
           </div>
         </motion.aside>
 
-        <div className="flex-1 px-4 md:px-12 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>
-                  Welcome back, {childName}!   <PartyPopper size={32} className="text-softPink fill-softPink ml-2 inline-block" />
-
-                </h1>
-                <p className="text-warmBrown mt-1 text-sm md:text-base">Ready for today's magical learning adventure?</p>
-              </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="flex items-center gap-1 bg-blush px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-peach">
-                  <Flame size={14} className="text-orange-500" />
-                  <span className="text-xs md:text-sm font-bold text-darkBrown">7 day streak</span>
-                </div>
-                <div className="flex items-center gap-1 bg-gold/20 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-gold/30">
-                  <Trophy size={14} className="text-gold" />
-                  <span className="text-xs md:text-sm font-bold text-darkBrown">Level 5</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-            {statsCards.map((card, index) => (
-              <DashboardCard key={index} {...card} />
-            ))}
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-darkBrown mb-4" style={{ fontFamily: "'Comic Neue', cursive" }}>
-              Quick Launch
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
-              {quickActions.map((action, index) => (
-                <QuickActionCard key={index} {...action} />
-              ))}
-            </div>
-          </div>
-        </div>
+        {renderMainContent()}
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default KidsDashboard;

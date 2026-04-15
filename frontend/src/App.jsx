@@ -18,20 +18,17 @@ function App() {
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
 
-
         {/*Pages */}
-           <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
-              <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
-                <Route path="/dashboard" element={<ParentDashboard />} />
-                <Route path="/kids-dashboard" element={<KidsDashboard />} />
-                  <Route path="/profile" element={<Profile />} />
+        <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
+        <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
+        <Route path="/dashboard" element={<ParentDashboard />} />
+        <Route path="/kids-dashboard" element={<KidsDashboard />} />
+        <Route path="/profile" element={<Profile />} />
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword/>} />
-                        <Route path="/child-login" element={<ChildLogin />} />
-
-
+        <Route path="/forgot-password" element={<ForgotPassword/>} />
+        <Route path="/child-login" element={<ChildLogin />} />
 
       </Routes>
     </Router>

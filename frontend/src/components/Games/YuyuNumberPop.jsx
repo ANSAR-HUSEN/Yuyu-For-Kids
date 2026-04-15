@@ -231,7 +231,7 @@ const YuyuNumberPop = () => {
       <nav className="relative z-20 px-6 py-4 md:px-12 lg:px-24 flex justify-between items-center bg-cream/80 backdrop-blur-md shadow-sm rounded-full mx-6 mt-4 border border-peach">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/kids-dashboard')}
             className="flex items-center gap-2 text-darkBrown hover:text-softPink transition-colors"
           >
             <ArrowLeft size={20} />

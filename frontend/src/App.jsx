@@ -8,6 +8,8 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/Profile";
 import ChildLogin from "./components/ChildLogin";
 import YuyuNumberPop from "./components/Games/YuyuNumberPop";
+import YuyuShapeSorter from "./components/Games/YuyuShapeSorter";
+
 function App() {
   return (
     <Router>
@@ -15,10 +17,11 @@ function App() {
 
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
-                <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
 
 
         {/*Pages */}
+           <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
+              <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
                 <Route path="/dashboard" element={<ParentDashboard />} />
                 <Route path="/kids-dashboard" element={<KidsDashboard />} />
                   <Route path="/profile" element={<Profile />} />

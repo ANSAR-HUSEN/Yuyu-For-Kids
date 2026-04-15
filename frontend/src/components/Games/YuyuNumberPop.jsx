@@ -1,4 +1,3 @@
-// src/components/games/YuyuNumberPop.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Heart, Zap, ArrowLeft, Volume2, VolumeX, RefreshCw } from 'lucide-react';
@@ -242,7 +241,7 @@ const YuyuNumberPop = () => {
             <div className="w-10 h-10 rounded-full bg-softPink flex items-center justify-center">
               <span className="text-cream font-bold text-lg">Y</span>
             </div>
-            <span className="font-bold text-xl text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>Yuyu AI</span>
+            <span className="font-bold text-xl text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>Number Pop</span>
           </div>
         </div>
         

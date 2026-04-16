@@ -575,7 +575,7 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Add/Edit Child Modal - PIN removed */}
+      {/* Add/Edit Child Modal */}
       <AnimatePresence>
         {showAddChildModal && (
           <>

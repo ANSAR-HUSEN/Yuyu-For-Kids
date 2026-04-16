@@ -239,7 +239,7 @@ const YuyuCandyCrush = () => {
     <div className="min-h-screen bg-gradient-to-b from-softPink/20 to-peach/20">
       <nav className="relative z-20 px-6 py-4 md:px-12 lg:px-24 flex justify-between items-center bg-cream/80 backdrop-blur-md shadow-sm rounded-full mx-6 border border-peach">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-darkBrown hover:text-softPink">
+          <button onClick={() => navigate('/kids-dashboard')} className="flex items-center gap-2 text-darkBrown hover:text-softPink">
             <ArrowLeft size={20} />
             <span className="font-medium hidden md:inline">Exit Game</span>
           </button>

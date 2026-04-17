@@ -11,7 +11,7 @@ import YuyuNumberPop from "./components/Games/YuyuNumberPop";
 import YuyuShapeSorter from "./components/Games/YuyuShapeSorter";
 import YuyuTicTacToe from "./components/Games/YuyuTicTacToe";
 import YuyuCandyCrush from "./components/Games/YuyuCandyCrush.jsx";
-
+import YuyuAIAssistant from "./components/YuyuAIAssistant";
 
 
 function App() {
@@ -25,11 +25,13 @@ function App() {
         {/*Pages */}
         <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
         <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
-                <Route path="/YuyuTicTacToe" element={<YuyuTicTacToe/>} />
-   <Route path="/YuyuCandyCrush" element={< YuyuCandyCrush/>} />
+        <Route path="/YuyuTicTacToe" element={<YuyuTicTacToe/>} />
+        <Route path="/YuyuCandyCrush" element={< YuyuCandyCrush/>} />
         <Route path="/dashboard" element={<ParentDashboard />} />
         <Route path="/kids-dashboard" element={<KidsDashboard />} />
         <Route path="/profile" element={<Profile />} />
+                <Route path="/YuyuAIAssistant" element={<YuyuAIAssistant />} />
+
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />

@@ -236,7 +236,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
   return (
     <div className="h-screen overflow-hidden bg-cream relative">
       
-      {/* Sidebar - Slides in from left */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -341,7 +340,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
         )}
       </AnimatePresence>
 
-      {/* Left Frame - shifts with sidebar */}
       <div className={`fixed left-0 top-0 bottom-0 w-12 md:w-20 pointer-events-none z-20 transition-all duration-300 ${sidebarOpen ? 'lg:left-[320px]' : ''}`}>
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gold via-softPink to-gold opacity-60" />
         <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-gold/30 via-softPink/30 to-gold/30" />
@@ -360,7 +358,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
         <div className="absolute left-5 bottom-1/3 w-1.5 h-1.5 rounded-full bg-gold/40" />
       </div>
       
-      {/* Right Frame */}
       <div className="fixed right-0 top-0 bottom-0 w-12 md:w-20 pointer-events-none z-20">
         <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-gold via-softPink to-gold opacity-60" />
         <div className="absolute right-6 top-0 bottom-0 w-px bg-gradient-to-b from-gold/30 via-softPink/30 to-gold/30" />
@@ -385,7 +382,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
         <div className="absolute top-1/2 left-1/2 w-56 h-56 bg-mint/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Main Content - shifts when sidebar opens */}
       <motion.div 
         className="h-full flex flex-col"
         animate={{ 
@@ -393,7 +389,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
         }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
       >
-        {/* Header */}
         <nav className="relative z-30 px-6 py-4 md:px-12 flex justify-between items-center bg-white/80 backdrop-blur-md shadow-sm rounded-full mx-6 mt-4 border border-peach">
           <div className="flex items-center gap-2">
             <button
@@ -405,7 +400,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
             </button>
             <div className="h-6 w-px bg-gold/30 mx-1 hidden sm:block" />
             
-            {/* Sidebar Toggle Button in Header */}
             <button
               onClick={toggleSidebar}
               className="flex items-center gap-2 text-warmBrown hover:text-softPink transition-colors px-2 py-1 rounded-lg hover:bg-blush/50"
@@ -413,7 +407,7 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
             >
               <Menu size={20} />
               <span className="text-sm font-medium hidden sm:inline">
-                {sidebarOpen ? "Close History" : "Chat History"}
+                Chat History
               </span>
               {hasHistory && !sidebarOpen && (
                 <span className="text-xs bg-gold/20 px-1.5 py-0.5 rounded-full text-gold">
@@ -447,7 +441,6 @@ const YuyuAIAssistant = ({ onBack, childName = "friend" }) => {
           </div>
         </nav>
 
-        {/* Main Chat Area */}
         <div className="relative z-10 flex flex-col h-[calc(100vh-80px)] overflow-hidden">
           
           <div className="flex-1 overflow-y-auto scrollbar-hide px-4 md:px-12 lg:px-24 py-6">

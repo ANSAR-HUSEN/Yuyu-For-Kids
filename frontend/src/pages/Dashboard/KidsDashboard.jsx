@@ -177,7 +177,7 @@ const KidsDashboard = () => {
     { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3, onClick: () => setActiveNav('games') },
     { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35, onClick: () => setActiveNav('stories') },
     { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4, onClick: () => setActiveNav('quiz') },
-    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => setActiveNav('draw') }
+    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => navigate('/YuyuDrawing') }
   ];
 
   const navItems = [
@@ -191,6 +191,10 @@ const KidsDashboard = () => {
 
   const handleProfileClick = () => {
     navigate('/profile');
+  };
+
+  const handleDrawClick = () => {
+    navigate('/YuyuDrawing');
   };
 
   const renderMainContent = () => {
@@ -344,7 +348,11 @@ const KidsDashboard = () => {
                       key={item.id}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => {
-                        setActiveNav(item.id);
+                        if (item.id === 'draw') {
+                          navigate('/YuyuDrawing');
+                        } else {
+                          setActiveNav(item.id);
+                        }
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 ${
@@ -384,7 +392,13 @@ const KidsDashboard = () => {
                   key={item.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setActiveNav(item.id)}
+                  onClick={() => {
+                    if (item.id === 'draw') {
+                      navigate('/YuyuDrawing');
+                    } else {
+                      setActiveNav(item.id);
+                    }
+                  }}
                   className={`relative w-full mb-4 p-3 rounded-2xl transition-all duration-300 group ${
                     isActive ? 'bg-softPink/20 shadow-md' : 'hover:bg-white/50'
                   }`}

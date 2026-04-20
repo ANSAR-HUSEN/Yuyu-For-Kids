@@ -455,18 +455,7 @@ const YuyuCloudAdventure = () => {
     ctx.fillStyle = '#B0C4DE';
     ctx.fillRect(20, 60, 200 * (currentCloudSize / 100), 15);
     
-    // Hearts display
-    for (let i = 0; i < 3; i++) {
-      if (i < hearts) {
-        ctx.fillStyle = '#FF6B9D';
-        ctx.font = '28px Arial';
-        ctx.fillText('❤️', CANVAS_WIDTH - 100 + (i * 35), 55);
-      } else {
-        ctx.fillStyle = '#CCCCCC';
-        ctx.font = '28px Arial';
-        ctx.fillText('🖤', CANVAS_WIDTH - 100 + (i * 35), 55);
-      }
-    }
+  
     
     // Score
     ctx.fillStyle = '#5C4033';

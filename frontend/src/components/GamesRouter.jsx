@@ -3,12 +3,13 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Gamepad2, Trophy, Flame, ArrowLeft,
-  Shapes, Target, Heart, Binary
+  Shapes, Target, Heart, Binary, CloudRain
 } from 'lucide-react';
 import shape from '../assets/shape.png';
 import pop from '../assets/pop.png';
 import candy from '../assets/candy.png';
 import tictac from '../assets/tictac.png';
+import cloud from '../assets/cloud.png';
 
 const GamesRouter = ({ childName, onBack }) => {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ const GamesRouter = ({ childName, onBack }) => {
           title="Shape Match"
           description="Tap the matching shape!"
           image={shape}
-          color="from-emerald-700 to-green-800" // Elmerland Green / Deep Forest Green
+          color="from-emerald-700 to-green-800"
           icon={<Shapes size={20} />}
           onClick={() => handleGameClick('/YuyuShapeSorter')}
         />
@@ -67,7 +68,7 @@ const GamesRouter = ({ childName, onBack }) => {
           title="Number Pop"
           description="Pop the right answer!"
           image={pop}
-          color="from-red-900 to-burgundy-800" // Deep Burgundy
+          color="from-red-900 to-burgundy-800"
           icon={<Target size={20} />}
           onClick={() => handleGameClick('/YuyuNumberPop')}
         />
@@ -79,7 +80,7 @@ const GamesRouter = ({ childName, onBack }) => {
           title="Tic Tac Toe"
           description="X vs O - Classic fun!"
           image={tictac}
-          color="from-amber-600 to-yellow-700" // Antique Gold
+          color="from-amber-600 to-yellow-700"
           icon={<Binary size={20} />}
           onClick={() => handleGameClick('/YuyuTicTacToe')}
         />
@@ -88,13 +89,23 @@ const GamesRouter = ({ childName, onBack }) => {
           title="Candy Crush"
           description="Match 3 candies!"
           image={candy}
-          color="from-gray-800 to-slate-900" // Dark / Charcoal
+          color="from-gray-800 to-slate-900"
           icon={<Heart size={20} />}
           onClick={() => handleGameClick('/YuyuCandyCrush')}
         />
       </div>
 
-    
+      {/* Third Row - Cloud Adventure Game (NEW - Only this card has light grey + golden mix background) */}
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
+        <GameCard
+          title="Cloud Adventure"
+          description="Catch raindrops, avoid bombs! Help Yuyu survive in the sky!"
+          image={cloud}
+          color="from-[#D4C9B3] to-[#C4B896]" // Light grey mixed with golden
+          icon={<CloudRain size={20} />}
+          onClick={() => handleGameClick('/YuyuCloudAdventure')}
+        />
+      </div>
     </motion.div>
   );
 };

@@ -13,6 +13,7 @@ import YuyuTicTacToe from "./components/Games/YuyuTicTacToe";
 import YuyuCandyCrush from "./components/Games/YuyuCandyCrush.jsx";
 import YuyuAIAssistant from "./components/YuyuAIAssistant";
 import YuyuDrawing from "./pages/YuyuDrawing.jsx";
+import YuyuCloudAdventure from "./components/Games/YuyuCloudAdventure.jsx";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter />} />
         <Route path="/YuyuTicTacToe" element={<YuyuTicTacToe />} />
         <Route path="/YuyuCandyCrush" element={<YuyuCandyCrush />} />
+        <Route path="/YuyuCloudAdventure" element={<YuyuCloudAdventure/>} />
 
         {/* Creative Tools */}
         <Route path="/YuyuAIAssistant" element={<YuyuAIAssistant />} />

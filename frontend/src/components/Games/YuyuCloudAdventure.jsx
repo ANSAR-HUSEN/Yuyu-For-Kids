@@ -1,668 +1,389 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, Zap, ArrowLeft, Volume2, VolumeX, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import yuyuImage from '../../assets/yuyu.png';
+import { motion } from 'framer-motion';
+import { Star, Volume2, VolumeX, Pause, Play, Home, ChevronRight, Sparkles } from 'lucide-react';
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
-const YUYU_SIZE = 70;
-const ITEM_SIZE = 28;
+const levels = [
+  { id: 1, rows: 2, cols: 3, timeLimit: 60, emojis: ['😀', '😍', '🐶', '🐱', '🐭', '🐹'], pairs: 3 },
+  { id: 2, rows: 3, cols: 4, timeLimit: 90, emojis: ['🌟', '⭐', '🌈', '☁️', '🌞', '🌙'], pairs: 6 },
+  { id: 3, rows: 4, cols: 4, timeLimit: 120, emojis: ['🎨', '🖌️', '📖', '✏️', '🎵', '🎭', '📚', '🎨'], pairs: 8 },
+  { id: 4, rows: 4, cols: 5, timeLimit: 150, emojis: ['🍕', '🍦', '🍎', '🥕', '🍪', '🥛', '🍓', '🍌', '🌮', '🍭'], pairs: 10 },
+  { id: 5, rows: 5, cols: 6, timeLimit: 180, emojis: ['🚀', '🪐', '🎪', '🎠', '🏰', '🧸', '🌈', '🦄', '🐉', '🎲', '🛡️', '🏆', '🧿', '🪄', '🌟'], pairs: 15 },
+];
 
-const YuyuCloudAdventure = () => {
-  const navigate = useNavigate();
-  const canvasRef = useRef(null);
-  const yuyuImgRef = useRef(null);
-  const [gameState, setGameState] = useState('playing');
+const YuyuMemoryMatch = () => {
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [gamePhase, setGamePhase] = useState('menu'); // menu, playing, levelComplete, gameOver
+  const [cards, setCards] = useState([]);
+  const [flippedCards, setFlippedCards] = useState([]);
+  const [matchedCards, setMatchedCards] = useState([]);
   const [score, setScore] = useState(0);
-  const [cloudSize, setCloudSize] = useState(100);
-  const [hearts, setHearts] = useState(3);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [soundOn, setSoundOn] = useState(true);
-  const [highScore, setHighScore] = useState(0);
-  const [combo, setCombo] = useState(0);
-  
-  const gameRef = useRef({
-    yuyuX: CANVAS_WIDTH / 2 - YUYU_SIZE / 2,
-    raindrops: [],
-    bombs: [],
-    iceCreams: [],
-    cloudSizePercent: 100,
-    lastRaindropSpawn: 0,
-    lastBombSpawn: 0,
-    lastIceCreamSpawn: 0,
-    lastShrinkTime: 0,
-    frame: 0,
-    particles: [],
-    warningPlayed: false,
-    currentCombo: 0
-  });
-  
-  const animationRef = useRef(null);
-  const lastTimestampRef = useRef(0);
+  const [moves, setMoves] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [stars, setStars] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [mismatchStreak, setMismatchStreak] = useState(0);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [bestScores, setBestScores] = useState({});
+  const [earnedStars, setEarnedStars] = useState({});
+  const [highestLevel, setHighestLevel] = useState(1);
+  const [yuyuMessage, setYuyuMessage] = useState("Hi! Let's play Memory Match! 🐶");
 
-  // Load high score from localStorage
-  useEffect(() => {
-    const savedHighScore = localStorage.getItem('yuyuRunnerHighScore');
-    if (savedHighScore) setHighScore(parseInt(savedHighScore));
-  }, []);
+  const timerRef = useRef(null);
+  const audioContextRef = useRef(null);
 
-  // Update high score
-  useEffect(() => {
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('yuyuRunnerHighScore', score);
+  // Audio
+  const getAudioContext = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
-  }, [score, highScore]);
+    return audioContextRef.current;
+  };
 
-  // Load Yuyu image
-  useEffect(() => {
-    const img = new Image();
-    img.src = yuyuImage;
-    img.onload = () => {
-      yuyuImgRef.current = img;
-      setImageLoaded(true);
-    };
-    img.onerror = () => {
-      console.error("Yuyu image failed");
-      setImageLoaded(true);
-    };
-  }, []);
+  const playSound = (type) => {
+    if (isMuted) return;
+    const audioCtx = getAudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-  // Play sounds
-  const playCollectSound = useCallback(() => {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 1200;
+    if (type === 'flip') {
+      osc.type = 'sine';
+      osc.frequency.value = 600;
       gain.gain.value = 0.1;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
-    } catch(e) {}
-  }, [soundOn]);
-
-  const playBombSound = useCallback(() => {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 300;
+    } else if (type === 'match') {
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+      gain.gain.value = 0.2;
+    } else if (type === 'mismatch') {
+      osc.type = 'sawtooth';
+      osc.frequency.value = 400;
       gain.gain.value = 0.15;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
-    } catch(e) {}
-  }, [soundOn]);
+    } else if (type === 'win') {
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.8);
+      gain.gain.value = 0.25;
+    }
 
-  const playIceCreamSound = useCallback(() => {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 1000;
-      gain.gain.value = 0.12;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
-    } catch(e) {}
-  }, [soundOn]);
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1500;
 
-  const playWarningSound = useCallback(() => {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 520;
-      gain.gain.value = 0.12;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
-    } catch(e) {}
-  }, [soundOn]);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.6);
+  };
 
-  const playGameOverSound = useCallback(() => {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 300;
-      gain.gain.value = 0.15;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.6);
-    } catch(e) {}
-  }, [soundOn]);
+  // Load progress
+  useEffect(() => {
+    const savedHighest = localStorage.getItem('yuyuHighestLevel');
+    const savedBest = localStorage.getItem('yuyuBestScores');
+    const savedStars = localStorage.getItem('yuyuEarnedStars');
 
-  // Spawn items
-  const spawnRaindrop = useCallback(() => {
-    gameRef.current.raindrops.push({
-      x: 20 + Math.random() * (CANVAS_WIDTH - 40),
-      y: 30,
-      type: 'raindrop'
-    });
+    if (savedHighest) setHighestLevel(parseInt(savedHighest));
+    if (savedBest) setBestScores(JSON.parse(savedBest));
+    if (savedStars) setEarnedStars(JSON.parse(savedStars));
   }, []);
 
-  const spawnBomb = useCallback(() => {
-    gameRef.current.bombs.push({
-      x: 20 + Math.random() * (CANVAS_WIDTH - 40),
-      y: 30,
-      type: 'bomb',
-      wobble: Math.random() * Math.PI * 2
-    });
-  }, []);
+  const saveProgress = (level, newScore, newStars) => {
+    const newHighest = Math.max(highestLevel, level + (newStars > 0 ? 1 : 0));
+    setHighestLevel(newHighest);
+    localStorage.setItem('yuyuHighestLevel', newHighest.toString());
 
-  const spawnIceCream = useCallback(() => {
-    gameRef.current.iceCreams.push({
-      x: 20 + Math.random() * (CANVAS_WIDTH - 40),
-      y: 30,
-      type: 'icecream'
-    });
-  }, []);
+    const updatedBest = { ...bestScores, [level]: Math.max(bestScores[level] || 0, newScore) };
+    setBestScores(updatedBest);
+    localStorage.setItem('yuyuBestScores', JSON.stringify(updatedBest));
 
-  // Reset game
-  const resetGame = useCallback(() => {
-    gameRef.current = {
-      yuyuX: CANVAS_WIDTH / 2 - YUYU_SIZE / 2,
-      raindrops: [],
-      bombs: [],
-      iceCreams: [],
-      cloudSizePercent: 100,
-      lastRaindropSpawn: 0,
-      lastBombSpawn: 0,
-      lastIceCreamSpawn: 0,
-      lastShrinkTime: 0,
-      frame: 0,
-      particles: [],
-      warningPlayed: false,
-      currentCombo: 0
-    };
+    const updatedStars = { ...earnedStars, [level]: Math.max(earnedStars[level] || 0, newStars) };
+    setEarnedStars(updatedStars);
+    localStorage.setItem('yuyuEarnedStars', JSON.stringify(updatedStars));
+  };
+
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  const startLevel = (levelId) => {
+    const level = levels.find(l => l.id === levelId);
+    if (!level) return;
+
+    setCurrentLevel(levelId);
+    setGamePhase('playing');
     setScore(0);
-    setCloudSize(100);
-    setHearts(3);
-    setCombo(0);
-    setGameState('playing');
-  }, []);
+    setMoves(0);
+    setTimeLeft(level.timeLimit);
+    setMatchedCards([]);
+    setFlippedCards([]);
+    setMismatchStreak(0);
+    setHintUsed(false);
+    setProgress(0);
+    setIsPaused(false);
 
-  // Move Yuyu
-  const moveYuyu = useCallback((direction) => {
-    if (gameState !== 'playing') return;
-    const g = gameRef.current;
-    if (direction === 'left') {
-      g.yuyuX = Math.max(10, g.yuyuX - 14);
-    } else if (direction === 'right') {
-      g.yuyuX = Math.min(CANVAS_WIDTH - YUYU_SIZE - 10, g.yuyuX + 14);
-    }
-  }, [gameState]);
+    const cardPairs = [...level.emojis, ...level.emojis];
+    const shuffled = shuffleArray(cardPairs);
 
-  // Game logic
-  const updateGame = useCallback((timestamp) => {
-    if (gameState !== 'playing') return;
-    
-    const delta = Math.min(33, timestamp - lastTimestampRef.current);
-    if (delta < 16) return;
-    
-    const g = gameRef.current;
-    
-    // Cloud shrinks
-    if (timestamp - g.lastShrinkTime > 1000) {
-      g.lastShrinkTime = timestamp;
-      g.cloudSizePercent = Math.max(0, g.cloudSizePercent - 1);
-      setCloudSize(g.cloudSizePercent);
-      
-      if (g.cloudSizePercent <= 20 && !g.warningPlayed) {
-        g.warningPlayed = true;
-        playWarningSound();
+    const newCards = shuffled.map((emoji, index) => ({
+      id: index,
+      emoji,
+      isMatched: false,
+    }));
+
+    setCards(newCards);
+    setYuyuMessage("Click any card to start! ✨");
+    playSound('click');
+  };
+
+  const flipCard = (id) => {
+    if (flippedCards.length === 2 || matchedCards.includes(id) || isPaused) return;
+
+    playSound('flip');
+    const newFlipped = [...flippedCards, id];
+    setFlippedCards(newFlipped);
+
+    if (newFlipped.length === 2) {
+      setMoves(prev => prev + 1);
+      const [first, second] = newFlipped;
+      const card1 = cards.find(c => c.id === first);
+      const card2 = cards.find(c => c.id === second);
+
+      if (card1.emoji === card2.emoji) {
+        setMatchedCards(prev => [...prev, first, second]);
+        setScore(prev => prev + 10);
+        setMismatchStreak(0);
+        playSound('match');
+        setYuyuMessage("Hooray! Amazing match! 🌟");
+        setTimeout(() => setFlippedCards([]), 300);
+      } else {
+        setScore(prev => Math.max(0, prev - 2));
+        setMismatchStreak(prev => prev + 1);
+        playSound('mismatch');
+        setYuyuMessage("Oops! Try again! 💕");
+        setTimeout(() => setFlippedCards([]), 800);
       }
-      
-      if (g.cloudSizePercent <= 0) {
-        playGameOverSound();
-        setGameState('gameover');
-        return;
-      }
     }
-    
-    // Spawn raindrops
-    if (g.frame - g.lastRaindropSpawn > 25) {
-      g.lastRaindropSpawn = g.frame;
-      spawnRaindrop();
-    }
-    
-    // Spawn bombs (every 45 frames)
-    if (g.frame - g.lastBombSpawn > 45 && g.bombs.length < 4) {
-      g.lastBombSpawn = g.frame;
-      spawnBomb();
-    }
-    
-    // Spawn ice cream (every 120 frames)
-    if (g.frame - g.lastIceCreamSpawn > 120 && g.iceCreams.length < 2) {
-      g.lastIceCreamSpawn = g.frame;
-      spawnIceCream();
-    }
-    
-    const yuyuCenterX = g.yuyuX + YUYU_SIZE / 2;
-    const yuyuCenterY = CANVAS_HEIGHT - 110;
-    
-    // Update raindrops
-    g.raindrops = g.raindrops.filter(drop => {
-      drop.y += 4;
-      const dropCenterX = drop.x + ITEM_SIZE / 2;
-      const dropCenterY = drop.y + ITEM_SIZE / 2;
-      
-      if (Math.abs(dropCenterX - yuyuCenterX) < 45 && Math.abs(dropCenterY - yuyuCenterY) < 50) {
-        playCollectSound();
-        const newSize = Math.min(100, g.cloudSizePercent + 5);
-        g.cloudSizePercent = newSize;
-        setCloudSize(newSize);
-        const newCombo = g.currentCombo + 1;
-        g.currentCombo = newCombo;
-        setCombo(newCombo);
-        const pointsEarned = 1 + Math.floor(newCombo / 5);
-        setScore(prev => prev + pointsEarned);
-        if (newSize > 20) g.warningPlayed = false;
-        return false;
-      }
-      return drop.y < CANVAS_HEIGHT - 60;
-    });
-    
-    // Update bombs (HURT YUYU)
-    g.bombs = g.bombs.filter(bomb => {
-      bomb.y += 4.5;
-      bomb.wobble += 0.15;
-      const wobbleX = Math.sin(bomb.wobble) * 4;
-      const bombCenterX = bomb.x + ITEM_SIZE / 2 + wobbleX;
-      const bombCenterY = bomb.y + ITEM_SIZE / 2;
-      
-      if (Math.abs(bombCenterX - yuyuCenterX) < 48 && Math.abs(bombCenterY - yuyuCenterY) < 55) {
-        playBombSound();
-        const newHearts = hearts - 1;
-        setHearts(newHearts);
-        g.currentCombo = 0;
-        setCombo(0);
-        
-        // Add shake effect
-        g.particles.push({ x: bomb.x, y: bomb.y, life: 15, type: 'boom' });
-        
-        if (newHearts <= 0) {
-          playGameOverSound();
-          setGameState('gameover');
-        }
-        return false;
-      }
-      return bomb.y < CANVAS_HEIGHT - 60;
-    });
-    
-    // Update ice cream (HEAL YUYU)
-    g.iceCreams = g.iceCreams.filter(ice => {
-      ice.y += 3.5;
-      const iceCenterX = ice.x + ITEM_SIZE / 2;
-      const iceCenterY = ice.y + ITEM_SIZE / 2;
-      
-      if (Math.abs(iceCenterX - yuyuCenterX) < 45 && Math.abs(iceCenterY - yuyuCenterY) < 50) {
-        playIceCreamSound();
-        if (hearts < 3) {
-          setHearts(prev => Math.min(3, prev + 1));
-        }
-        setScore(prev => prev + 2);
-        g.particles.push({ x: ice.x, y: ice.y, life: 20, type: 'heart' });
-        return false;
-      }
-      return ice.y < CANVAS_HEIGHT - 60;
-    });
-    
-    // Update particles
-    g.particles = g.particles.filter(p => {
-      p.life--;
-      return p.life > 0;
-    });
-    
-    g.frame++;
-    lastTimestampRef.current = timestamp;
-  }, [gameState, hearts, spawnRaindrop, spawnBomb, spawnIceCream, playCollectSound, playBombSound, playIceCreamSound, playWarningSound, playGameOverSound]);
+  };
 
-  // DRAW EVERYTHING
-  const drawGame = useCallback((ctx) => {
-    const g = gameRef.current;
-    const currentCloudSize = g.cloudSizePercent;
-    
-    // Sky gradient using cream/peach colors
-    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    gradient.addColorStop(0, '#FFF9F5');
-    gradient.addColorStop(0.5, '#FFD1DC');
-    gradient.addColorStop(1, '#FFDAC1');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    // Draw raindrops (gold colored)
-    g.raindrops.forEach(drop => {
-      ctx.fillStyle = '#FFB347';
-      ctx.beginPath();
-      ctx.ellipse(drop.x + ITEM_SIZE/2, drop.y + ITEM_SIZE/2, ITEM_SIZE/2, ITEM_SIZE/2.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#FFD700';
-      ctx.font = '16px Arial';
-      ctx.fillText('💧', drop.x + 5, drop.y + 20);
-    });
-    
-    // Draw bombs
-    g.bombs.forEach(bomb => {
-      const wobbleX = Math.sin(bomb.wobble) * 4;
-      ctx.fillStyle = '#5C4033';
-      ctx.beginPath();
-      ctx.ellipse(bomb.x + ITEM_SIZE/2 + wobbleX, bomb.y + ITEM_SIZE/2, ITEM_SIZE/2, ITEM_SIZE/2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#FF9EAA';
-      ctx.font = '20px Arial';
-      ctx.fillText('💣', bomb.x + 3 + wobbleX, bomb.y + 22);
-      ctx.beginPath();
-      ctx.moveTo(bomb.x + 20 + wobbleX, bomb.y + 5);
-      ctx.lineTo(bomb.x + 28 + wobbleX, bomb.y - 5);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#FFB347';
-      ctx.stroke();
-    });
-    
-    // Draw ice creams
-    g.iceCreams.forEach(ice => {
-      ctx.fillStyle = '#FFD1DC';
-      ctx.beginPath();
-      ctx.ellipse(ice.x + ITEM_SIZE/2, ice.y + ITEM_SIZE/2, ITEM_SIZE/2, ITEM_SIZE/2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#FF9EAA';
-      ctx.font = '18px Arial';
-      ctx.fillText('🍦', ice.x + 3, ice.y + 22);
-    });
-    
-    // Cloud - White with soft gray shadow for realistic cloud look
-    const cloudWidth = 180 * (currentCloudSize / 100);
-    const cloudHeight = 80 * (currentCloudSize / 100);
-    const cloudX = CANVAS_WIDTH/2 - cloudWidth/2;
-    const cloudY = CANVAS_HEIGHT - 110;
-    
-    // Draw cloud shadow first (soft gray)
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#C0C0C0';
-    ctx.beginPath();
-    ctx.ellipse(cloudX + cloudWidth * 0.2 + 4, cloudY + cloudHeight * 0.5 + 4, cloudWidth * 0.3, cloudHeight * 0.6, 0, 0, Math.PI * 2);
-    ctx.ellipse(cloudX + cloudWidth * 0.5 + 4, cloudY + cloudHeight * 0.4 + 4, cloudWidth * 0.4, cloudHeight * 0.7, 0, 0, Math.PI * 2);
-    ctx.ellipse(cloudX + cloudWidth * 0.8 + 4, cloudY + cloudHeight * 0.5 + 4, cloudWidth * 0.3, cloudHeight * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Draw main white cloud
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.ellipse(cloudX + cloudWidth * 0.2, cloudY + cloudHeight * 0.5, cloudWidth * 0.3, cloudHeight * 0.6, 0, 0, Math.PI * 2);
-    ctx.ellipse(cloudX + cloudWidth * 0.5, cloudY + cloudHeight * 0.4, cloudWidth * 0.4, cloudHeight * 0.7, 0, 0, Math.PI * 2);
-    ctx.ellipse(cloudX + cloudWidth * 0.8, cloudY + cloudHeight * 0.5, cloudWidth * 0.3, cloudHeight * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Add soft blueish tint to bottom of cloud for realism
-    ctx.globalAlpha = 0.15;
-    ctx.fillStyle = '#B0C4DE';
-    ctx.beginPath();
-    ctx.ellipse(cloudX + cloudWidth * 0.5, cloudY + cloudHeight * 0.7, cloudWidth * 0.5, cloudHeight * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    
-    // Yuyu
-    const yuyuDrawX = g.yuyuX;
-    const yuyuDrawY = cloudY - 15;
-    if (yuyuImgRef.current) {
-      ctx.drawImage(yuyuImgRef.current, yuyuDrawX, yuyuDrawY, YUYU_SIZE, YUYU_SIZE);
-    } else {
-      ctx.fillStyle = '#FF9EAA';
-      ctx.beginPath();
-      ctx.ellipse(yuyuDrawX + 35, yuyuDrawY + 35, 30, 30, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    
-    // Particles (boom effects)
-    g.particles.forEach(p => {
-      if (p.type === 'boom') {
-        ctx.fillStyle = `rgba(255, 100, 100, ${p.life / 15})`;
-        ctx.font = '24px Arial';
-        ctx.fillText('💥', p.x, p.y);
-      } else if (p.type === 'heart') {
-        ctx.fillStyle = `rgba(255, 107, 155, ${p.life / 20})`;
-        ctx.font = '20px Arial';
-        ctx.fillText('❤️', p.x, p.y);
-      }
-    });
-    
-    // Cloud health bar
-    ctx.fillStyle = '#8B5E3C';
-    ctx.font = 'bold 14px Arial';
-    ctx.fillText('☁️ Cloud Health', 20, 50);
-    ctx.fillStyle = '#FFD1DC';
-    ctx.fillRect(20, 60, 200, 15);
-    ctx.fillStyle = '#B0C4DE';
-    ctx.fillRect(20, 60, 200 * (currentCloudSize / 100), 15);
-    
-  
-    
-    // Score
-    ctx.fillStyle = '#5C4033';
-    ctx.font = 'bold 28px Arial';
-    ctx.fillText('💧 ' + score, CANVAS_WIDTH - 100, 110);
-    
-    // Warning
-    if (currentCloudSize <= 20) {
-      ctx.fillStyle = '#FF9EAA';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText('⚠️ CLOUD IS SMALL! CATCH RAINDROPS! ⚠️', CANVAS_WIDTH/2 - 190, 140);
-    }
-    
-    if (hearts === 1) {
-      ctx.fillStyle = '#FF6B9D';
-      ctx.font = 'bold 16px Arial';
-      ctx.fillText('⚠️ CAREFUL! ONE HEART LEFT! ⚠️', CANVAS_WIDTH/2 - 150, 170);
-    }
-  }, [score, cloudSize, hearts, imageLoaded]);
-
-  // Draw game over screen
-  const drawGameOverScreen = useCallback((ctx) => {
-    ctx.fillStyle = 'rgba(92, 64, 51, 0.85)';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 46px "Comic Sans MS", cursive';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over!', CANVAS_WIDTH/2, 180);
-    
-    ctx.font = 'bold 42px Arial';
-    ctx.fillStyle = '#FFB347';
-    ctx.fillText('💧 ' + score, CANVAS_WIDTH/2, 280);
-    
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#FFF9F5';
-    ctx.fillText('raindrops caught', CANVAS_WIDTH/2, 340);
-    
-    if (score === highScore && score > 0) {
-      ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 28px Arial';
-      ctx.fillText('🎉 NEW HIGH SCORE! 🎉', CANVAS_WIDTH/2, 400);
-    }
-    
-    ctx.font = '22px Arial';
-    ctx.fillStyle = '#FFD1DC';
-    ctx.fillText('Tap to play again', CANVAS_WIDTH/2, 500);
-    
-    ctx.textAlign = 'left';
-  }, [score, highScore]);
-
-  // Animation loop
-  const animate = useCallback((timestamp) => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    
-    if (gameState === 'playing') {
-      updateGame(timestamp);
-      drawGame(ctx);
-    } else if (gameState === 'gameover') {
-      drawGame(ctx);
-      drawGameOverScreen(ctx);
-    }
-    
-    animationRef.current = requestAnimationFrame(animate);
-  }, [gameState, updateGame, drawGame, drawGameOverScreen]);
-
-  // Handle taps
-  const handleScreenTap = useCallback((e) => {
-    if (gameState === 'gameover') {
-      resetGame();
-      return;
-    }
-    
-    if (gameState !== 'playing') return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    let clientX;
-    if (e.touches) {
-      clientX = e.touches[0].clientX;
-    } else {
-      clientX = e.clientX;
-    }
-    
-    const canvasX = (clientX - rect.left) * (canvas.width / rect.width);
-    
-    if (canvasX < canvas.width / 2) {
-      moveYuyu('left');
-    } else {
-      moveYuyu('right');
-    }
-  }, [gameState, resetGame, moveYuyu]);
-
-  // Keyboard controls
+  // Timer
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (gameState === 'gameover' && e.code === 'Space') {
-        e.preventDefault();
-        resetGame();
-      } else if (gameState === 'playing') {
-        if (e.code === 'ArrowLeft') {
-          e.preventDefault();
-          moveYuyu('left');
-        } else if (e.code === 'ArrowRight') {
-          e.preventDefault();
-          moveYuyu('right');
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, resetGame, moveYuyu]);
-
-  useEffect(() => {
-    animationRef.current = requestAnimationFrame(animate);
-    lastTimestampRef.current = performance.now();
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [animate]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.width = CANVAS_WIDTH;
-      canvas.height = CANVAS_HEIGHT;
+    if (gamePhase === 'playing' && timeLeft > 0 && !isPaused) {
+      timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    } else if (timeLeft === 0 && gamePhase === 'playing') {
+      setGamePhase('gameOver');
+      playSound('lose');
+      setYuyuMessage("Time's up! But you're still wonderful! 💖");
     }
-  }, []);
+    return () => clearTimeout(timerRef.current);
+  }, [timeLeft, gamePhase, isPaused]);
+
+  // Level completion check
+  useEffect(() => {
+    const level = levels.find(l => l.id === currentLevel);
+    if (!level) return;
+
+    if (matchedCards.length === level.pairs * 2) {
+      const mismatches = moves - level.pairs;
+      let earned = mismatches > 2 ? 1 : mismatches > 0 ? 2 : 3;
+      const acc = moves > 0 ? Math.round((level.pairs / moves) * 100) : 100;
+
+      setStars(earned);
+      setAccuracy(acc);
+      setGamePhase('levelComplete');
+      playSound('win');
+      saveProgress(currentLevel, score, earned);
+      setYuyuMessage(earned === 3 ? "You're a Memory Master! 🎉" : "You did it! Great job! ✨");
+    } else {
+      setProgress(Math.floor((matchedCards.length / (level.pairs * 2)) * 100));
+    }
+  }, [matchedCards, currentLevel, score, moves]);
+
+  const cardSize = typeof window !== 'undefined' && window.innerWidth < 640 ? 78 : 100;
+
+  const renderLevelSelect = () => (
+    <div className="min-h-screen bg-gradient-to-br from-[#FFDAC1] to-[#FFF8E7] p-6 flex flex-col items-center">
+      <div className="text-center mb-10">
+        <h1 className="text-6xl font-bold text-[#5C4033] mb-3">Yuyu Memory Match</h1>
+        <p className="text-2xl text-[#8B5E3C]">Let's train our super memory!</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+        {levels.map(level => {
+          const isUnlocked = level.id <= highestLevel;
+          const best = bestScores[level.id] || 0;
+          const starCount = earnedStars[level.id] || 0;
+
+          return (
+            <motion.div
+              key={level.id}
+              whileHover={isUnlocked ? { scale: 1.05 } : {}}
+              className={`bg-white rounded-3xl p-6 shadow-xl border-4 border-[#5C4033] flex flex-col items-center relative ${isUnlocked ? 'cursor-pointer' : 'opacity-70'}`}
+              onClick={() => isUnlocked && startLevel(level.id)}
+            >
+              {!isUnlocked && (
+                <div className="absolute top-4 right-4 bg-[#F5F5F5] text-[#8B5E3C] p-2 rounded-full">
+                  🔒
+                </div>
+              )}
+
+              <div className="text-5xl mb-4">Level {level.id}</div>
+              <div className="text-[#FFB347] text-2xl font-bold mb-6">{level.rows}×{level.cols}</div>
+
+              <div className="flex gap-1 mb-6">
+                {[1,2,3].map(s => (
+                  <Star key={s} size={32} className={s <= starCount ? "fill-[#FFB347] text-[#FFB347]" : "text-[#F5F5F5]"} />
+                ))}
+              </div>
+
+              {best > 0 && <div className="text-sm text-[#8B5E3C] mb-4">Best: {best} pts</div>}
+
+              <button
+                disabled={!isUnlocked}
+                className="mt-auto w-full py-4 rounded-2xl bg-[#FFB347] text-[#5C4033] font-bold text-xl hover:bg-[#FF9EAA] disabled:bg-gray-300"
+              >
+                {isUnlocked ? "Play Level →" : "Locked"}
+              </button>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderGame = () => {
+    const level = levels.find(l => l.id === currentLevel);
+
+    return (
+      <div className="min-h-screen bg-[#FFDAC1]">
+        {/* HUD */}
+        <div className="bg-[#5C4033] text-white py-3 px-6 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-6">
+            <span className="text-2xl">⭐</span>
+            <span className="font-bold text-xl">Level {currentLevel}</span>
+            <span className="text-[#FFB347] font-bold">Score: {score}</span>
+          </div>
+
+          <div className="flex items-center gap-8 text-lg">
+            <div>Moves: {moves}</div>
+            <div className={`font-mono text-2xl font-bold ${timeLeft < 11 ? 'text-[#FFB347] animate-pulse' : ''}`}>
+              {timeLeft}s
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button onClick={() => setIsPaused(!isPaused)}>{isPaused ? <Play size={28} /> : <Pause size={28} />}</button>
+            <button onClick={() => setIsMuted(!isMuted)}>{isMuted ? <VolumeX size={28} /> : <Volume2 size={28} />}</button>
+            <button onClick={() => setGamePhase('menu')}><Home size={28} /></button>
+          </div>
+        </div>
+
+        <div className="h-2 bg-[#F5F5F5]">
+          <div className="h-2 bg-[#B5EAD7] transition-all duration-300" style={{ width: `${progress}%` }} />
+        </div>
+
+        {/* Board */}
+        <div className="flex justify-center items-center min-h-[70vh] p-6">
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${level.cols}, minmax(0, 1fr))` }}>
+            {cards.map(card => (
+              <motion.div
+                key={card.id}
+                className="relative w-[var(--card-size)] h-[var(--card-size)] cursor-pointer"
+                style={{ '--card-size': `${cardSize}px` }}
+                onClick={() => flipCard(card.id)}
+                animate={{ rotateY: (flippedCards.includes(card.id) || matchedCards.includes(card.id)) ? 180 : 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Back */}
+                <div className="absolute inset-0 rounded-3xl border-4 border-[#5C4033] bg-gradient-to-br from-[#FFDAC1] to-[#FFB347] flex items-center justify-center shadow-xl">
+                  <span className="text-4xl opacity-40">✨</span>
+                </div>
+
+                {/* Front */}
+                <div className="absolute inset-0 rounded-3xl border-4 border-[#5C4033] bg-[#FFF8E7] flex items-center justify-center text-6xl shadow-xl rotate-y-180">
+                  {card.emoji}
+                </div>
+
+                {matchedCards.includes(card.id) && (
+                  <div className="absolute -top-2 -right-2 bg-[#B5EAD7] rounded-full p-1">
+                    <Sparkles size={20} />
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Yuyu */}
+        <div className="fixed bottom-6 right-6 flex flex-col items-end z-40">
+          <div className="bg-[#FF9EAA] text-[#5C4033] px-6 py-3 rounded-3xl rounded-br-none max-w-[280px] shadow-xl mb-3 text-lg">
+            {yuyuMessage}
+          </div>
+          <div className="w-28 h-28 bg-white rounded-3xl border-4 border-[#5C4033] flex items-center justify-center text-7xl shadow-2xl">
+            🐶
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLevelComplete = () => {
+    const isNewBest = score > (bestScores[currentLevel] || 0);
+
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-10 max-w-md w-full text-center border-8 border-[#FFB347]"
+        >
+          <h2 className="text-5xl font-bold text-[#5C4033]">Level {currentLevel} Complete!</h2>
+          <p className="text-3xl my-6">🎉 Congratulations! 🎉</p>
+
+          <div className="flex justify-center gap-4 mb-8">
+            {[1,2,3].map(s => (
+              <Star key={s} size={64} className={s <= stars ? "fill-[#FFB347] text-[#FFB347]" : "text-gray-300"} />
+            ))}
+          </div>
+
+          <div className="bg-[#FFF8E7] p-6 rounded-2xl text-left space-y-3 mb-8 text-xl">
+            <div>Score: <span className="font-bold text-[#FFB347]">{score}</span></div>
+            <div>Accuracy: {accuracy}%</div>
+            {isNewBest && <div className="text-[#B5EAD7] font-bold">✨ New Best Score! ✨</div>}
+          </div>
+
+          <div className="space-y-4">
+            {currentLevel < 5 && (
+              <button onClick={() => startLevel(currentLevel + 1)} className="w-full py-5 bg-[#FFB347] text-[#5C4033] font-bold text-2xl rounded-2xl">
+                Next Level →
+              </button>
+            )}
+            <button onClick={() => startLevel(currentLevel)} className="w-full py-5 bg-[#5C4033] text-white font-bold rounded-2xl">
+              Play Again
+            </button>
+            <button onClick={() => setGamePhase('menu')} className="w-full py-4 text-[#8B5E3C]">
+              Back to Levels
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-softGrey overflow-hidden">
-      {/* Header - EXACT same style as Number Pop game */}
-      <nav className="relative z-20 px-6 py-4 md:px-12 lg:px-24 flex justify-between items-center bg-cream/80 backdrop-blur-md shadow-sm rounded-full mx-6 mt-4 border border-peach">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/kids-dashboard')}
-            className="flex items-center gap-2 text-darkBrown hover:text-softPink transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium hidden md:inline">Exit Game</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-softPink flex items-center justify-center">
-              <span className="text-cream font-bold text-lg">Y</span>
-            </div>
-            <span className="font-bold text-xl text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>Yuyu Runner</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Star size={20} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown">{score}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-cream rounded-full px-4 py-2">
-            <Heart size={20} className="text-softPink" />
-            <span className="font-bold text-darkBrown">{hearts}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Zap size={20} className="text-gold" />
-            <span className="font-bold text-darkBrown">x{combo}</span>
-          </div>
-          <button onClick={resetGame} className="p-2 rounded-full hover:bg-cream transition-colors">
-            <RefreshCw size={20} className="text-warmBrown" />
-          </button>
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full hover:bg-cream transition-colors">
-            {soundOn ? <Volume2 size={20} className="text-warmBrown" /> : <VolumeX size={20} className="text-warmBrown" />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Game Canvas */}
-      <div className="flex flex-col items-center justify-center px-4 py-6">
-        <div style={{
-          borderRadius: '32px',
-          boxShadow: '0 25px 45px rgba(0,0,0,0.15)',
-          overflow: 'hidden'
-        }}>
-          <canvas
-            ref={canvasRef}
-            onClick={handleScreenTap}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              const touch = e.touches[0];
-              handleScreenTap({ clientX: touch.clientX });
-            }}
-            style={{
-              width: '100%',
-              maxWidth: CANVAS_WIDTH,
-              height: 'auto',
-              display: 'block',
-              cursor: 'pointer'
-            }}
-          />
-        </div>
-        {gameState === 'playing' && (
-          <div className="mt-4 text-warmBrown text-sm flex gap-6">
-            <span>👈 Tap Left = Move Left</span>
-            <span>👉 Tap Right = Move Right</span>
-          </div>
-        )}
-      </div>
+    <div className="font-sans">
+      {gamePhase === 'menu' && renderLevelSelect()}
+      {gamePhase === 'playing' && renderGame()}
+      {gamePhase === 'levelComplete' && renderLevelComplete()}
     </div>
   );
 };
 
-export default YuyuCloudAdventure;
+export default YuyuMemoryMatch;

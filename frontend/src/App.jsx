@@ -14,6 +14,7 @@ import YuyuCandyCrush from "./components/Games/YuyuCandyCrush.jsx";
 import YuyuAIAssistant from "./components/YuyuAIAssistant";
 import YuyuDrawing from "./pages/YuyuDrawing.jsx";
 import YuyuCloudAdventure from "./components/Games/YuyuCloudAdventure.jsx";
+import Books from "./components/Books.jsx"
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/child-login" element={<ChildLogin />} />
+        <Route path="/books" element={<Books childName="mery" />} />
 
         {/* Dashboard Pages */}
         <Route path="/dashboard" element={<ParentDashboard />} />

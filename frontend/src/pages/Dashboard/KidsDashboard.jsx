@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, BookOpen, Puzzle, Palette, Zap, TrendingUp,
-  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper
+  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper, Feather
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import GamesRouter from '../../components/GamesRouter';
@@ -169,24 +169,22 @@ const KidsDashboard = () => {
 
   const statsCards = [
     { icon: Puzzle, title: "Games Played", value: "24", color: "softPink", delay: 0, onClick: () => setActiveNav('games') },
-    { icon: BookOpen, title: "Stories Read", value: "12", color: "mint", delay: 0.1, onClick: () => setActiveNav('stories') },
-    { icon: Trophy, title: "Badges Earned", value: "8", color: "gold", delay: 0.2, onClick: () => setActiveNav('progress') }
+    { icon: BookOpen, title: "Stories Read", value: "12", color: "mint", delay: 0.1, onClick: () => setActiveNav('stories') }
   ];
 
   const quickActions = [
     { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3, onClick: () => setActiveNav('games') },
-    { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35, onClick: () => setActiveNav('stories') },
-    { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4, onClick: () => setActiveNav('quiz') },
+    { icon: Feather, title: "Story Time", color: "mint", delay: 0.35, onClick: () => setActiveNav('stories') },
+    { icon: BookOpen, title: "Books", color: "peach", delay: 0.4, onClick: () => setActiveNav('books') },
     { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => navigate('/YuyuDrawing') }
   ];
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'games', icon: Gamepad2, label: 'Games' },
-    { id: 'stories', icon: BookOpen, label: 'Stories' },
-    { id: 'quiz', icon: Zap, label: 'Quiz' },
-    { id: 'draw', icon: Palette, label: 'Draw' },
-    { id: 'progress', icon: TrendingUp, label: 'Progress' }
+    { id: 'stories', icon: Feather, label: 'Stories' },
+    { id: 'books', icon: BookOpen, label: 'Books' },
+    { id: 'draw', icon: Palette, label: 'Draw' }
   ];
 
   const handleProfileClick = () => {
@@ -236,7 +234,7 @@ const KidsDashboard = () => {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
             {statsCards.map((card, index) => (
               <DashboardCard key={index} {...card} />
             ))}

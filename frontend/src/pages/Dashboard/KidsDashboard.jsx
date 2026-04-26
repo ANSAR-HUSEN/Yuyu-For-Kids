@@ -5,7 +5,7 @@ import {
   Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import GamesRouter from './KidsGamesRouter';
+import GamesRouter from '../../components/GamesRouter';
 
 const DashboardCard = ({ icon: Icon, title, value, color, delay, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);

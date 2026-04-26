@@ -1,18 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
-
+import { api } from "../../services/api";
 import yuyu from "../../assets/yuyu.png";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    // Check for success message from registration
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await api.login({
+        email: form.email,
+        password: form.password,
+      });
+      
+      // Store token and user data
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("parentId", response.parentId);
+        localStorage.setItem("parentEmail", response.email);
+      }
+      
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,8 +91,20 @@ export default function Login() {
             </p>
           </div>
 
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+              {successMessage}
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <form className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="text-xs text-slate-500">Email</label>
                 <div className="relative mt-1">
@@ -63,6 +115,7 @@ export default function Login() {
                     placeholder="you@example.com"
                     value={form.email}
                     onChange={handleChange}
+                    required
                     className="w-full pl-10 p-3 border border-slate-200 rounded-lg outline-none focus:border-pink-400"
                   />
                 </div>
@@ -78,6 +131,7 @@ export default function Login() {
                     placeholder="••••••••"
                     value={form.password}
                     onChange={handleChange}
+                    required
                     className="w-full pl-10 p-3 border border-slate-200 rounded-lg outline-none focus:border-pink-400"
                   />
                 </div>
@@ -94,9 +148,11 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-softPink"
+                disabled={loading}
+                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#ec4899' }}
               >
-                Log in
+                {loading ? "Logging in..." : "Log in"}
               </button>
             </form>
           </div>

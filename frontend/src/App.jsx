@@ -14,7 +14,7 @@ import YuyuCandyCrush from "./components/Games/YuyuCandyCrush.jsx";
 import YuyuAIAssistant from "./components/YuyuAIAssistant";
 import YuyuDrawing from "./pages/YuyuDrawing.jsx";
 import YuyuCloudAdventure from "./components/Games/YuyuCloudAdventure.jsx";
-import Books from "./components/Books.jsx"
+import Books from "./components/Books/Books.jsx"
 
 function App() {
   return (

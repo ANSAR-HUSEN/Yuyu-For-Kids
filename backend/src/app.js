@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const authRoutes = require('./routes/authRoutes'); // Add this
+const authRoutes = require('./routes/authRoutes'); 
 const childRoutes = require('./routes/childRoutes');
-const storyRoutes = require('./routes/storyRoutes'); // 1. Import it
+const storyRoutes = require('./routes/storyRoutes'); 
 
 const app = express();
 
@@ -12,14 +12,14 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes); // Register the auth routes
+app.use('/api/auth', authRoutes); 
 
 app.get('/', (req, res) => {
   res.json({ message: "Welcome to Yuyu Ai API" });
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/children', childRoutes); // Add this
-app.use('/api/stories', storyRoutes); // 2. Use it
+app.use('/api/children', childRoutes); 
+app.use('/api/stories', storyRoutes); 
 
 module.exports = app;

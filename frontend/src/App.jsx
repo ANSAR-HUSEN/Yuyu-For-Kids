@@ -5,37 +5,36 @@ import LandingPage from "./pages/LandingPage";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";  
 import Profile from "./pages/Profile";
 import ChildLogin from "./components/ChildLogin";
 import YuyuNumberPop from "./components/Games/YuyuNumberPop";
-
-
 import YuyuShapeSorter from "./components/Games/YuyuShapeSorter";
-
 
 function App() {
   return (
     <Router>
       <Routes>
-
         {/* Public Pages */}
         <Route path="/" element={<LandingPage />} />
 
+        {/* Games Pages */}
+        <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
+        <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
+        
+        {/* Dashboard Pages */}
+        <Route path="/dashboard" element={<ParentDashboard />} />
+        <Route path="/kids-dashboard" element={<KidsDashboard />} />
+        <Route path="/profile" element={<Profile />} />
 
-        {/*Pages */}
-           <Route path="/YuyuNumberPop" element={<YuyuNumberPop/>} />
-              <Route path="/YuyuShapeSorter" element={<YuyuShapeSorter/>} />
-                <Route path="/dashboard" element={<ParentDashboard />} />
-                <Route path="/kids-dashboard" element={<KidsDashboard />} />
-                  <Route path="/profile" element={<Profile />} />
-
+        {/* Auth Pages */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword/>} />
-                        <Route path="/child-login" element={<ChildLogin />} />
-
-
-
+        <Route path="/forgot-password" element={<ForgotPassword/>} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />  
+        
+        {/* Child Pages */}
+        <Route path="/child-login" element={<ChildLogin />} />
       </Routes>
     </Router>
   );

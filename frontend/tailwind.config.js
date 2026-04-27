@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
@@ -7,18 +6,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: '#FFF9F5',
-        blush: '#FFD1DC',
-        softPink: '#FF9EAA',
-        mint: '#B5EAD7',
-        peach: '#FFDAC1',
+        cream: '#FFFDF7',
+        peach: '#FFE5D9',
+        blush: '#FFD6E0',
+        softPink: '#FF8FAB',
+        warmBrown: '#8B6B5B',
+        darkBrown: '#5C3D2E',
         gold: '#FFB347',
-        darkBrown: '#5C4033',
-        warmBrown: '#8B5E3C',
-        lightYellow: '#FFF8E7',
-        softGrey: '#F5F5F5',
-      },
-    },
+        marine: '#2E6B8F',
+        darkMarine: '#1A4A6B',
+      }
+    }
   },
   plugins: [],
 }

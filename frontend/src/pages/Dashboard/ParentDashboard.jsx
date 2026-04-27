@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, BookOpen, Puzzle, Palette, Zap, TrendingUp,
@@ -8,14 +8,16 @@ import {
   Shield, Gift, Sparkles, Baby, Smile, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
+import Toast from '../../components/Toast';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('children');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [parentName, setParentName] = useState("Parent");
+  const [parentName, setParentName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
-  const [tempName, setTempName] = useState(parentName);
+  const [tempName, setTempName] = useState("");
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
@@ -25,16 +27,114 @@ const ParentDashboard = () => {
     age: '',
   });
   const [formErrors, setFormErrors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [children, setChildren] = useState([]);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  const [children, setChildren] = useState([
-    { id: 1, name: "Hany", age: 7, xp: 1234, level: 5, streak: 7, avatar: "Baby", storiesRead: 12, gamesPlayed: 24, quizzesTaken: 15, badgesEarned: 8 },
-    { id: 2, name: "Emma", age: 5, xp: 890, level: 3, streak: 4, avatar: "Smile", storiesRead: 8, gamesPlayed: 15, quizzesTaken: 10, badgesEarned: 5 }
-  ]);
-
-  const parentInfo = {
-    email: "parent@example.com",
+  const [parentInfo, setParentInfo] = useState({
+    email: "",
     plan: "Family Premium",
-    joined: "March 2024"
+    joined: ""
+  });
+
+  // Show toast message
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+  };
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({ show: false, message: '', type: 'success' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  // Fetch parent profile from database
+  useEffect(() => {
+    const fetchParentProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+        
+        try {
+          const profile = await api.getParentProfile();
+          setParentName(profile.name || "Parent");
+          setTempName(profile.name || "Parent");
+          setParentInfo({
+            email: profile.email,
+            plan: "Family Premium",
+            joined: new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          });
+          localStorage.setItem('parentName', profile.name || "Parent");
+          localStorage.setItem('parentEmail', profile.email);
+        } catch (apiError) {
+          const savedName = localStorage.getItem('parentName');
+          const savedEmail = localStorage.getItem('parentEmail');
+          setParentName(savedName || "Parent");
+          setTempName(savedName || "Parent");
+          setParentInfo({
+            email: savedEmail || "parent@example.com",
+            plan: "Family Premium",
+            joined: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          });
+        }
+      } catch (error) {
+        setParentName("Parent");
+        setTempName("Parent");
+        setParentInfo({
+          email: "parent@example.com",
+          plan: "Family Premium",
+          joined: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchParentProfile();
+    
+    const savedChildren = localStorage.getItem('children');
+    if (savedChildren) {
+      try {
+        setChildren(JSON.parse(savedChildren));
+      } catch (e) {
+        console.error('Failed to load children:', e);
+      }
+    }
+  }, [navigate]);
+
+  // Professional logout
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = '/';
+  };
+
+  // Save edited name to database
+  const handleSaveName = async () => {
+    if (!tempName.trim()) {
+      showToast('Name cannot be empty', 'error');
+      return;
+    }
+    
+    try {
+      await api.updateParentProfile(tempName);
+      setParentName(tempName);
+      setIsEditingName(false);
+      showToast('Name updated successfully!', 'success');
+    } catch (error) {
+      showToast('Failed to update name', 'error');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setTempName(parentName);
+    setIsEditingName(false);
   };
 
   const tips = [
@@ -59,11 +159,6 @@ const ParentDashboard = () => {
     localStorage.setItem('children', JSON.stringify(updatedChildren));
   };
 
-  const handleSaveName = () => {
-    setParentName(tempName);
-    setIsEditingName(false);
-  };
-
   const validateForm = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = "Child's name is required";
@@ -77,6 +172,7 @@ const ParentDashboard = () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      showToast('Please fix form errors', 'error');
       return;
     }
 
@@ -99,12 +195,14 @@ const ParentDashboard = () => {
     saveChildrenToStorage(updatedChildren);
     setShowAddChildModal(false);
     resetForm();
+    showToast(`${formData.name} added successfully!`, 'success');
   };
 
   const handleEditChild = () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      showToast('Please fix form errors', 'error');
       return;
     }
 
@@ -118,13 +216,16 @@ const ParentDashboard = () => {
     setEditingChild(null);
     setShowAddChildModal(false);
     resetForm();
+    showToast(`${formData.name} updated successfully!`, 'success');
   };
 
   const handleDeleteChild = (id) => {
-    if (window.confirm('Are you sure you want to remove this child? All their progress will be lost.')) {
+    const childToDelete = children.find(child => child.id === id);
+    if (window.confirm(`Are you sure you want to remove ${childToDelete?.name}? All their progress will be lost.`)) {
       const updatedChildren = children.filter(child => child.id !== id);
       setChildren(updatedChildren);
       saveChildrenToStorage(updatedChildren);
+      showToast(`${childToDelete?.name} removed`, 'success');
     }
   };
 
@@ -159,8 +260,28 @@ const ParentDashboard = () => {
     return icons[avatarName] || Baby;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cream">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-softPink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-warmBrown">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream pt-4">
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast({ show: false, message: '', type: 'success' })}
+        />
+      )}
+
       <div 
         className="fixed inset-0 pointer-events-none opacity-20"
         style={{
@@ -188,20 +309,21 @@ const ParentDashboard = () => {
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 bg-softPink/10 rounded-full px-3 py-1.5 border border-softPink/30">
             <User size={14} className="text-softPink" />
-            <span className="font-bold text-darkBrown text-sm">{parentName}</span>
+            <span className="font-bold text-darkBrown text-sm">{parentName || "Parent"}</span>
           </div>
           
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleKidMode}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-mint to-teal-300 text-darkBrown font-medium hover:opacity-90 transition-all shadow-md"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-marine to-darkMarine text-white font-medium hover:opacity-90 transition-all shadow-md"
           >
             <Users size={18} />
             <span className="text-sm font-medium hidden md:inline">Kid Mode</span>
           </motion.button>
+          
           <button 
-            onClick={() => navigate('/')}
+            onClick={handleLogout}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-softPink/20 transition-colors"
           >
             <LogOut size={18} className="text-warmBrown" />
@@ -287,7 +409,7 @@ const ParentDashboard = () => {
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-softPink to-peach flex items-center justify-center mx-auto shadow-md border-3 border-white">
                 <User size={40} className="text-darkBrown" />
               </div>
-              <h3 className="font-bold text-darkBrown mt-2">{parentName}</h3>
+              <h3 className="font-bold text-darkBrown mt-2">{parentName || "Parent"}</h3>
               <p className="text-xs text-warmBrown">{parentInfo.email}</p>
             </div>
             
@@ -341,7 +463,7 @@ const ParentDashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {children.map((child, idx) => {
+                  {children.map((child) => {
                     const AvatarIcon = getAvatarIcon(child.avatar);
                     return (
                       <motion.div
@@ -351,7 +473,7 @@ const ParentDashboard = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-softPink/20 to-mint/20 flex items-center justify-center border-2 border-softPink">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-softPink/20 to-marine/20 flex items-center justify-center border-2 border-softPink">
                               <AvatarIcon size={32} className="text-softPink" />
                             </div>
                             <div>
@@ -384,7 +506,7 @@ const ParentDashboard = () => {
                             <span className="text-warmBrown">Total XP:</span>
                             <span className="font-bold text-darkBrown">{child.xp} points</span>
                           </div>
-                          <button className="w-full mt-3 px-4 py-2 bg-mint text-darkBrown rounded-full text-sm font-bold hover:opacity-80 transition">
+                          <button className="w-full mt-3 px-4 py-2 bg-marine text-white rounded-full text-sm font-bold hover:opacity-80 transition">
                             View Progress →
                           </button>
                         </div>
@@ -432,7 +554,7 @@ const ParentDashboard = () => {
                     return (
                       <div key={child.id} className="bg-white rounded-3xl p-6 shadow-lg border border-peach">
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-softPink/20 to-mint/20 flex items-center justify-center border-2 border-softPink">
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-softPink/20 to-marine/20 flex items-center justify-center border-2 border-softPink">
                             <AvatarIcon size={28} className="text-softPink" />
                           </div>
                           <div>
@@ -454,7 +576,7 @@ const ParentDashboard = () => {
                           
                           <div className="grid grid-cols-2 gap-3 pt-3">
                             <div className="bg-cream rounded-xl p-2 text-center">
-                              <BookOpen size={16} className="text-mint mx-auto mb-1" />
+                              <BookOpen size={16} className="text-marine mx-auto mb-1" />
                               <p className="text-xs text-warmBrown">Stories</p>
                               <p className="font-bold text-darkBrown">{child.storiesRead} read</p>
                             </div>
@@ -502,10 +624,10 @@ const ParentDashboard = () => {
                             autoFocus
                           />
                           <button onClick={handleSaveName} className="text-softPink text-sm font-bold">Save</button>
-                          <button onClick={() => setIsEditingName(false)} className="text-warmBrown text-sm">Cancel</button>
+                          <button onClick={handleCancelEdit} className="text-warmBrown text-sm">Cancel</button>
                         </div>
                       ) : (
-                        <p className="text-sm text-warmBrown mt-1">{parentName}</p>
+                        <p className="text-sm text-warmBrown mt-1">{parentName || "Parent"}</p>
                       )}
                     </div>
                     {!isEditingName && (
@@ -548,7 +670,7 @@ const ParentDashboard = () => {
               <h1 className="text-2xl md:text-3xl font-bold text-darkBrown mb-6">Subscription Plan</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-softPink/10 to-mint/10 rounded-3xl p-6 border-2 border-softPink">
+                <div className="bg-gradient-to-br from-softPink/10 to-marine/10 rounded-3xl p-6 border-2 border-softPink">
                   <h3 className="text-xl font-bold text-darkBrown mb-2">Family Premium</h3>
                   <p className="text-3xl font-bold text-darkBrown mb-4">$9.99<span className="text-sm text-warmBrown">/month</span></p>
                   <ul className="space-y-2 mb-6">
@@ -575,7 +697,7 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Add/Edit Child Modal - PIN removed */}
+      {/* Add/Edit Child Modal */}
       <AnimatePresence>
         {showAddChildModal && (
           <>

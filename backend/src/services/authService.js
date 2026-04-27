@@ -312,30 +312,19 @@ const registerParent = async (email, password, name = null) => {
 
 // LOGIN - with invalid credentials handling
 const loginParent = async (email, password) => {
-  // Validate input
-  if (!email || !password) {
-    throw new Error('Email and password are required');
-  }
-  
   const parent = await prisma.parent.findUnique({ where: { email } });
-  
-  if (!parent) {
-    throw new Error('Invalid email or password');
-  }
+  if (!parent) throw new Error('Invalid email or password');
 
   const isMatch = await bcrypt.compare(password, parent.password);
-  
-  if (!isMatch) {
-    throw new Error('Invalid email or password');
-  }
+  if (!isMatch) throw new Error('Invalid email or password');
 
   const token = jwt.sign({ id: parent.id }, JWT_SECRET, { expiresIn: '7d' });
   
   return { 
     parent: {
       id: parent.id,
-      email: parent.email,
-      name: parent.name
+      email: parent.email,  
+      name: parent.name || ""
     }, 
     token 
   };
@@ -428,5 +417,31 @@ const resetPassword = async (token, newPassword) => {
 
   return { message: 'Password reset successfully. Please log in with your new password.' };
 };
-
-module.exports = { registerParent, loginParent, forgotPassword, resetPassword };
+const getParentProfile = async (parentId) => {
+  const parent = await prisma.parent.findUnique({
+    where: { id: parentId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+    }
+  });
+  
+  if (!parent) throw new Error('Parent not found');
+  return parent;
+};
+const updateParentProfile = async (parentId, name) => {
+  const updatedParent = await prisma.parent.update({
+    where: { id: parentId },
+    data: { name },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    }
+  });
+  
+  return updatedParent;
+};
+module.exports = { registerParent, loginParent, forgotPassword, resetPassword, getParentProfile, updateParentProfile };

@@ -2,9 +2,17 @@ const authService = require('../services/authService');
 
 const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const parent = await authService.registerParent(email, password);
-    res.status(201).json({ message: "Parent registered successfully", parentId: parent.id });
+    const { email, password, name } = req.body;  
+    
+    console.log("Received registration:", { email, name }); 
+    
+    const parent = await authService.registerParent(email, password, name); 
+    
+    res.status(201).json({ 
+      message: "Parent registered successfully", 
+      parentId: parent.id,
+      name: parent.name 
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

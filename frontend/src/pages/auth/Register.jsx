@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Lock } from "lucide-react";
+import { User, Mail, Lock, AlertCircle, CheckCircle, X } from "lucide-react";
 import { api } from "../../services/api";
 import yuyu from "../../assets/yuyu.png";
 
@@ -14,10 +14,20 @@ export default function Register() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError(""); // Clear error on change
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -26,25 +36,20 @@ export default function Register() {
     setError("");
 
     try {
-      const response = await api.register({
+      await api.register({
+        name: form.name,
         email: form.email,
         password: form.password,
-        name: form.name,
       });
       
-      // Store token if needed
-      if (response.token) {
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("parentId", response.parentId);
-      }
+      setSuccess(true);
       
-      // Redirect to login or dashboard
-      navigate("/login", { 
-        state: { message: "Registration successful! Please log in." }
-      });
+      setTimeout(() => {
+        navigate("/login", { 
+        });
+      }, 2000);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -58,18 +63,12 @@ export default function Register() {
           transition={{ duration: 0.6 }}
           className="relative text-center max-w-md"
         >
-          <img
-            src={yuyu}
-            alt="Yuyu AI"
-            className="w-[320px] mx-auto drop-shadow-2xl"
-          />
-
+          <img src={yuyu} alt="Yuyu AI" className="w-[320px] mx-auto drop-shadow-2xl" />
           <h2 className="text-3xl font-semibold mt-8 text-slate-800">
             A Safe Learning Universe for Families
           </h2>
-
           <p className="text-slate-500 mt-4 text-sm leading-relaxed">
-            Parents create one secure account. Children learn inside a protected AI environment designed for creativity, safety, and growth.
+            Parents create one secure account. Children learn inside a protected AI environment.
           </p>
         </motion.div>
       </div>
@@ -82,19 +81,37 @@ export default function Register() {
           className="w-full max-w-md"
         >
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Create your account
-            </h1>
-
-            <p className="text-sm text-slate-500 mt-2">
-              Parent account setup for managing child learning profiles.
-            </p>
+            <h1 className="text-2xl font-semibold text-slate-900">Create your account</h1>
+            <p className="text-sm text-slate-500 mt-2">Parent account setup for managing child learning profiles.</p>
           </div>
 
+          {/* Success Message */}
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
+            >
+              <CheckCircle className="text-green-500" size={18} />
+              <p className="text-sm text-green-600 flex-1">Account created! Redirecting to login...</p>
+            </motion.div>
+          )}
+
+          {/* Error Message with Dismiss Button */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              {error}
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
+            >
+              <AlertCircle className="text-red-500" size={18} />
+              <p className="text-sm text-red-600 flex-1">{error}</p>
+              <button onClick={() => setError("")} className="text-red-400 hover:text-red-600">
+                <X size={16} />
+              </button>
+            </motion.div>
           )}
 
           <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white">
@@ -151,7 +168,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 bg-softPink disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-lg text-white font-medium transition hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: '#ec4899' }}
               >
                 {loading ? "Creating account..." : "Create account"}
@@ -161,9 +178,7 @@ export default function Register() {
 
           <p className="text-sm text-center mt-6 text-slate-500">
             Already have an account?{" "}
-            <Link to="/login" className="text-pink-500 font-medium">
-              Log in
-            </Link>
+            <Link to="/login" className="text-pink-500 font-medium">Log in</Link>
           </p>
         </motion.div>
       </div>

@@ -30,6 +30,7 @@ const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, childId: null, childName: '' });
 
   const [parentInfo, setParentInfo] = useState({
     email: "",
@@ -37,12 +38,10 @@ const ParentDashboard = () => {
     joined: ""
   });
 
-  // Show toast message
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
   };
 
-  // Auto-dismiss toast
   useEffect(() => {
     if (toast.show) {
       const timer = setTimeout(() => {
@@ -52,7 +51,6 @@ const ParentDashboard = () => {
     }
   }, [toast.show]);
 
-  // Fetch parent profile from database
   useEffect(() => {
     const fetchParentProfile = async () => {
       try {
@@ -84,38 +82,34 @@ const ParentDashboard = () => {
             joined: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           });
         }
+        
+        try {
+          const childrenData = await api.getChildren();
+          setChildren(childrenData);
+          localStorage.setItem('children', JSON.stringify(childrenData));
+        } catch (childrenError) {
+          console.log('Failed to load children from API, using localStorage');
+          const savedChildren = localStorage.getItem('children');
+          if (savedChildren) {
+            setChildren(JSON.parse(savedChildren));
+          }
+        }
+        
       } catch (error) {
-        setParentName("Parent");
-        setTempName("Parent");
-        setParentInfo({
-          email: "parent@example.com",
-          plan: "Family Premium",
-          joined: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-        });
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
     
     fetchParentProfile();
-    
-    const savedChildren = localStorage.getItem('children');
-    if (savedChildren) {
-      try {
-        setChildren(JSON.parse(savedChildren));
-      } catch (e) {
-        console.error('Failed to load children:', e);
-      }
-    }
   }, [navigate]);
 
-  // Professional logout
   const handleLogout = () => {
     localStorage.clear();
     window.location.href = '/';
   };
 
-  // Save edited name to database
   const handleSaveName = async () => {
     if (!tempName.trim()) {
       showToast('Name cannot be empty', 'error');
@@ -160,45 +154,41 @@ const ParentDashboard = () => {
   };
 
   const validateForm = () => {
-    const errors = {};
-    if (!formData.name.trim()) errors.name = "Child's name is required";
-    if (!formData.age) errors.age = "Age is required";
-    else if (parseInt(formData.age) < 3) errors.age = "Age must be at least 3";
-    else if (parseInt(formData.age) > 18) errors.age = "Age must be less than 18";
-    return errors;
-  };
+  const errors = {};
+  if (!formData.name.trim()) errors.name = "Child's name is required";
+  if (!formData.age) errors.age = "Age is required";
+  return errors;
+};
 
-  const handleAddChild = () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      showToast('Please fix form errors', 'error');
-      return;
-    }
+const handleAddChild = async () => {
+  const errors = validateForm();
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    showToast('Please fix form errors', 'error');
+    return;
+  }
 
-    const newChild = {
-      id: Date.now(),
+  if (children.length >= 3) {
+    showToast('You can only add up to 3 children per account', 'error');
+    return;
+  }
+
+  try {
+    const newChild = await api.addChild({
       name: formData.name,
       age: parseInt(formData.age),
-      avatar: avatarNames[children.length % avatarNames.length],
-      xp: 0,
-      level: 1,
-      streak: 0,
-      storiesRead: 0,
-      gamesPlayed: 0,
-      quizzesTaken: 0,
-      badgesEarned: 0
-    };
-
-    const updatedChildren = [...children, newChild];
-    setChildren(updatedChildren);
-    saveChildrenToStorage(updatedChildren);
+    });
+    
+    setChildren([...children, newChild]);
     setShowAddChildModal(false);
     resetForm();
     showToast(`${formData.name} added successfully!`, 'success');
-  };
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
 
-  const handleEditChild = () => {
+  const handleEditChild = async () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -206,27 +196,45 @@ const ParentDashboard = () => {
       return;
     }
 
-    const updatedChildren = children.map(child => 
-      child.id === editingChild.id 
-        ? { ...child, name: formData.name, age: parseInt(formData.age) }
-        : child
-    );
-    setChildren(updatedChildren);
-    saveChildrenToStorage(updatedChildren);
-    setEditingChild(null);
-    setShowAddChildModal(false);
-    resetForm();
-    showToast(`${formData.name} updated successfully!`, 'success');
+    try {
+      const updatedChild = await api.updateChild(editingChild.id, {
+        name: formData.name,
+        age: parseInt(formData.age),
+      });
+      
+      const updatedChildren = children.map(child => 
+        child.id === editingChild.id ? { ...child, ...updatedChild } : child
+      );
+      setChildren(updatedChildren);
+      setEditingChild(null);
+      setShowAddChildModal(false);
+      resetForm();
+      showToast(`${formData.name} updated successfully!`, 'success');
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
   };
 
-  const handleDeleteChild = (id) => {
-    const childToDelete = children.find(child => child.id === id);
-    if (window.confirm(`Are you sure you want to remove ${childToDelete?.name}? All their progress will be lost.`)) {
-      const updatedChildren = children.filter(child => child.id !== id);
+  const handleDeleteClick = (id, name) => {
+    setDeleteConfirm({ show: true, childId: id, childName: name });
+  };
+
+  const confirmDelete = async () => {
+    const { childId, childName } = deleteConfirm;
+    try {
+      await api.deleteChild(childId);
+      const updatedChildren = children.filter(child => child.id !== childId);
       setChildren(updatedChildren);
-      saveChildrenToStorage(updatedChildren);
-      showToast(`${childToDelete?.name} removed`, 'success');
+      showToast(`${childName} removed successfully`, 'success');
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setDeleteConfirm({ show: false, childId: null, childName: '' });
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ show: false, childId: null, childName: '' });
   };
 
   const openAddModal = () => {
@@ -281,6 +289,48 @@ const ParentDashboard = () => {
           onClose={() => setToast({ show: false, message: '', type: 'success' })}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm.show && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={cancelDelete}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm mx-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl p-6 border border-peach">
+                <h3 className="text-xl font-bold text-darkBrown mb-3">Confirm Delete</h3>
+                <p className="text-warmBrown mb-6">
+                  Are you sure you want to remove <strong className="text-softPink">{deleteConfirm.childName}</strong>? All their progress will be lost.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={cancelDelete}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-darkBrown rounded-xl font-medium hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <div 
         className="fixed inset-0 pointer-events-none opacity-20"
@@ -495,7 +545,7 @@ const ParentDashboard = () => {
                             <button onClick={() => openEditModal(child)} className="p-2 rounded-full hover:bg-softPink/20 transition-colors">
                               <Edit2 size={18} className="text-warmBrown" />
                             </button>
-                            <button onClick={() => handleDeleteChild(child.id)} className="p-2 rounded-full hover:bg-softPink/20 transition-colors">
+                            <button onClick={() => handleDeleteClick(child.id, child.name)} className="p-2 rounded-full hover:bg-softPink/20 transition-colors">
                               <Trash2 size={18} className="text-warmBrown" />
                             </button>
                           </div>

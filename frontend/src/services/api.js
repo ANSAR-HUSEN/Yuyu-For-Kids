@@ -30,57 +30,87 @@ export const api = {
     return data;
   },
   
-async login(credentials) {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(credentials),
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error || 'Login failed');
-  }
-  
-  if (data.token) {
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('parentId', data.parentId || data.parent?.id);
-    localStorage.setItem('parentName', data.name || data.parent?.name || "");
-    localStorage.setItem('parentEmail', data.email || data.parent?.email || credentials.email); 
-  }
-  
-  return data;
-},
-async updateParentProfile(name) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No token found');
-  }
-  
-  const response = await fetch(`${API_URL}/auth/profile`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ name }),
-  });
-  
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Failed to update profile');
-  }
-  
-  // Update localStorage with new name
-  if (data.name) {
-    localStorage.setItem('parentName', data.name);
-  }
-  
-  return data;
-},
+  async login(credentials) {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+    
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('parentId', data.parentId || data.parent?.id);
+      localStorage.setItem('parentName', data.name || data.parent?.name || "");
+      localStorage.setItem('parentEmail', data.email || data.parent?.email || credentials.email);
+    }
+    
+    return data;
+  },
+
+  async getParentProfile() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get profile');
+    }
+    
+    if (data.name) {
+      localStorage.setItem('parentName', data.name);
+    }
+    if (data.email) {
+      localStorage.setItem('parentEmail', data.email);
+    }
+    
+    return data;
+  },
+
+  async updateParentProfile(name) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update profile');
+    }
+    
+    if (data.name) {
+      localStorage.setItem('parentName', data.name);
+    }
+    
+    return data;
+  },
+
   async forgotPassword(email) {
     const response = await fetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
@@ -116,14 +146,38 @@ async updateParentProfile(name) {
     
     return data;
   },
-  
-  async getParentProfile() {
+
+  // CHILD ENDPOINTS
+  async addChild(childData) {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No token found');
     }
     
-    const response = await fetch(`${API_URL}/auth/profile`, {
+    const response = await fetch(`${API_URL}/children`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(childData),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to add child');
+    }
+    
+    return data;
+  },
+
+  async getChildren() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/children`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -133,15 +187,54 @@ async updateParentProfile(name) {
     
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to get profile');
+      throw new Error(data.error || 'Failed to get children');
     }
     
-    // Store the data from API response
-    if (data.name) {
-      localStorage.setItem('parentName', data.name);
+    return data;
+  },
+
+  async updateChild(childId, childData) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
     }
-    if (data.email) {
-      localStorage.setItem('parentEmail', data.email);
+    
+    const response = await fetch(`${API_URL}/children/${childId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: childData.name,
+        age: childData.age
+      }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update child');
+    }
+    
+    return data;
+  },
+
+  async deleteChild(childId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/children/${childId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to delete child');
     }
     
     return data;

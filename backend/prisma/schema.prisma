@@ -27,6 +27,11 @@ model Child {
   age            Int
   avatar         String?    
   totalPoints    Int        @default(0)
+  gamesPlayed    Int        @default(0)     // ADD THIS
+  storiesRead    Int        @default(0)     // ADD THIS
+  badgesEarned   Int        @default(0)     // ADD THIS
+  streak         Int        @default(0)     // ADD THIS
+  lastActive     DateTime?  @map("last_active")  // ADD THIS - for streak calculation
   
   parentId       String     @map("parent_id")
   parent         Parent     @relation(fields: [parentId], references: [id])

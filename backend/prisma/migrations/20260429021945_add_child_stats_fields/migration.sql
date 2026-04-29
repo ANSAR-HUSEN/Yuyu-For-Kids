@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "children" ADD COLUMN     "badgesEarned" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "gamesPlayed" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "last_active" TIMESTAMP(3),
+ADD COLUMN     "storiesRead" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "streak" INTEGER NOT NULL DEFAULT 0;

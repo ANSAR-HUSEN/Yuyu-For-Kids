@@ -28,6 +28,26 @@ const updateChild = async (req, res) => {
   }
 };
 
+const updateChildStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const child = await childService.updateChildStats(id, req.body, req.parent.id);
+    res.status(200).json(child);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const incrementGamesPlayed = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const child = await childService.incrementGamesPlayed(id, req.parent.id);
+    res.status(200).json(child);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const deleteChild = async (req, res) => {
   try {
     const { id } = req.params;
@@ -38,4 +58,11 @@ const deleteChild = async (req, res) => {
   }
 };
 
-module.exports = { addChild, getChildren, updateChild, deleteChild };
+module.exports = { 
+  addChild, 
+  getChildren, 
+  updateChild, 
+  updateChildStats,
+  incrementGamesPlayed,
+  deleteChild 
+};

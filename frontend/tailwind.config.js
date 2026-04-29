@@ -15,6 +15,7 @@ export default {
         gold: '#FFB347',
         marine: '#2E6B8F',
         darkMarine: '#1A4A6B',
+      
       }
     }
   },

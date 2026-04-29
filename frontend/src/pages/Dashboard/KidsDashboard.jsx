@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, BookOpen, Puzzle, Palette, Zap, TrendingUp,
@@ -6,13 +6,14 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import GamesRouter from '../../components/GamesRouter';
+import { api } from '../../services/api';
 
 const DashboardCard = ({ icon: Icon, title, value, color, delay, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const colorMap = {
     softPink: '#FF9EAA',
-    mint: '#B5EAD7',
+    marine:  '#2E6B8F',
     gold: '#FFB347',
   };
 
@@ -91,7 +92,7 @@ const QuickActionCard = ({ icon: Icon, title, color, delay, onClick }) => {
 
   const colorMap = {
     softPink: '#FF9EAA',
-    mint: '#B5EAD7',
+    marine: '#2E6B8F',
     peach: '#FFDAC1',
   };
 
@@ -163,19 +164,52 @@ const QuickActionCard = ({ icon: Icon, title, color, delay, onClick }) => {
 
 const KidsDashboard = () => {
   const navigate = useNavigate();
-  const childName = "hany";
   const [activeNav, setActiveNav] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [childData, setChildData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    gamesPlayed: 0,
+    storiesRead: 0,
+    badgesEarned: 0,
+    xp: 0,
+    level: 1,
+    streak: 0
+  });
+
+  useEffect(() => {
+    const loadChildData = () => {
+      const storedChild = localStorage.getItem('currentChild');
+      if (storedChild) {
+        const child = JSON.parse(storedChild);
+        setChildData(child);
+        setStats({
+          gamesPlayed: child.gamesPlayed || 0,
+          storiesRead: child.storiesRead || 0,
+          badgesEarned: child.badgesEarned || 0,
+          xp: child.xp || 0,
+          level: child.level || 1,
+          streak: child.streak || 0
+        });
+      } else {
+        // Redirect to child login if no child selected
+        navigate('/child-login');
+      }
+      setLoading(false);
+    };
+    
+    loadChildData();
+  }, [navigate]);
 
   const statsCards = [
-    { icon: Puzzle, title: "Games Played", value: "24", color: "softPink", delay: 0, onClick: () => setActiveNav('games') },
-    { icon: BookOpen, title: "Stories Read", value: "12", color: "mint", delay: 0.1, onClick: () => setActiveNav('stories') },
-    { icon: Trophy, title: "Badges Earned", value: "8", color: "gold", delay: 0.2, onClick: () => setActiveNav('progress') }
+    { icon: Puzzle, title: "Games Played", value: stats.gamesPlayed.toString(), color: "softPink", delay: 0, onClick: () => setActiveNav('games') },
+    { icon: BookOpen, title: "Stories Read", value: stats.storiesRead.toString(), color: "marine", delay: 0.1, onClick: () => setActiveNav('stories') },
+    { icon: Trophy, title: "Badges Earned", value: stats.badgesEarned.toString(), color: "gold", delay: 0.2, onClick: () => setActiveNav('progress') }
   ];
 
   const quickActions = [
     { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3, onClick: () => setActiveNav('games') },
-    { icon: BookOpen, title: "Story Time", color: "mint", delay: 0.35, onClick: () => setActiveNav('stories') },
+    { icon: BookOpen, title: "Story Time", color: "marine", delay: 0.35, onClick: () => setActiveNav('stories') },
     { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4, onClick: () => setActiveNav('quiz') },
     { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => setActiveNav('draw') }
   ];
@@ -189,6 +223,13 @@ const KidsDashboard = () => {
     { id: 'progress', icon: TrendingUp, label: 'Progress' }
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem('currentChild');
+    localStorage.removeItem('childId');
+    localStorage.removeItem('childName');
+    navigate('/child-login');
+  };
+
   const handleProfileClick = () => {
     navigate('/profile');
   };
@@ -197,7 +238,7 @@ const KidsDashboard = () => {
     if (activeNav === 'games') {
       return (
         <GamesRouter 
-          childName={childName}
+          childName={childData?.name || "Kid"}
           onBack={() => setActiveNav('home')}
         />
       );
@@ -215,18 +256,18 @@ const KidsDashboard = () => {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>
-                  Welcome back, {childName}! <PartyPopper size={32} className="text-softPink fill-softPink ml-2 inline-block" />
+                  Welcome back, {childData?.name || 'Kid'}! <PartyPopper size={32} className="text-softPink fill-softPink ml-2 inline-block" />
                 </h1>
                 <p className="text-warmBrown mt-1 text-sm md:text-base">Ready for today's magical learning adventure?</p>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
                 <div className="flex items-center gap-1 bg-blush px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-peach">
                   <Flame size={14} className="text-orange-500" />
-                  <span className="text-xs md:text-sm font-bold text-darkBrown">7 day streak</span>
+                  <span className="text-xs md:text-sm font-bold text-darkBrown">{stats.streak} day streak</span>
                 </div>
                 <div className="flex items-center gap-1 bg-gold/20 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-gold/30">
                   <Trophy size={14} className="text-gold" />
-                  <span className="text-xs md:text-sm font-bold text-darkBrown">Level 5</span>
+                  <span className="text-xs md:text-sm font-bold text-darkBrown">Level {stats.level}</span>
                 </div>
               </div>
             </div>
@@ -248,6 +289,16 @@ const KidsDashboard = () => {
               ))}
             </div>
           </div>
+
+          {/* Logout button for kids */}
+          <div className="mt-8 text-center">
+            <button
+              onClick={handleLogout}
+              className="text-sm text-warmBrown hover:text-softPink transition-colors"
+            >
+              ← Switch Profile
+            </button>
+          </div>
         </div>
       );
     }
@@ -261,10 +312,27 @@ const KidsDashboard = () => {
         >
           <h2 className="text-3xl font-bold text-darkBrown mb-4">Coming Soon!</h2>
           <p className="text-warmBrown">This section is under construction.</p>
+          <button
+            onClick={() => setActiveNav('home')}
+            className="mt-6 px-6 py-2 bg-softPink text-white rounded-full"
+          >
+            Go Back Home
+          </button>
         </motion.div>
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream via-blush/5 to-peach/10 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-softPink border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-warmBrown mt-4">Loading your adventure...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream">
@@ -293,7 +361,7 @@ const KidsDashboard = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-softPink/10 rounded-full px-3 py-1.5 border border-softPink/30">
             <Star size={14} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown text-sm">1,234 XP</span>
+            <span className="font-bold text-darkBrown text-sm">{stats.xp} XP</span>
           </div>
           <button 
             onClick={handleProfileClick}
@@ -326,7 +394,7 @@ const KidsDashboard = () => {
                   <div className="w-10 h-10 rounded-full bg-softPink flex items-center justify-center">
                     <span className="text-white font-bold text-lg">Y</span>
                   </div>
-                  <span className="font-bold text-xl text-darkBrown" style={{ fontFamily: "'Comic Neue', cursive" }}>Yuyu AI</span>
+                  <span className="font-bold text-xl text-darkBrown">Yuyu AI</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

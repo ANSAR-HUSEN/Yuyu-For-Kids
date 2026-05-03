@@ -48,6 +48,17 @@ const incrementGamesPlayed = async (req, res) => {
   }
 };
 
+const updateGameStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { score } = req.body;
+    const child = await childService.updateGameStats(id, score, req.parent.id);
+    res.status(200).json(child);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const deleteChild = async (req, res) => {
   try {
     const { id } = req.params;
@@ -64,5 +75,6 @@ module.exports = {
   updateChild, 
   updateChildStats,
   incrementGamesPlayed,
+  updateGameStats,
   deleteChild 
 };

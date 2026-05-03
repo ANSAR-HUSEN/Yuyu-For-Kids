@@ -11,7 +11,9 @@ import ChildLogin from "./components/ChildLogin";
 import YuyuNumberPop from "./components/Games/YuyuNumberPop";
 import YuyuShapeSorter from "./components/Games/YuyuShapeSorter";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import YuyuCandyCrush from "./components/Games/YuyuCandyCrush";
+import YuyuTicTacToe from "./components/Games/YuyuTicTacToe";
+import YuyuMemoryMatch from "./components/Games/YuyuMemoryMatch";
 function App() {
   return (
     <Router>
@@ -47,6 +49,30 @@ function App() {
           element={
             <ProtectedRoute>
               <YuyuShapeSorter />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/YuyuShapeSorter"
+          element={
+            <ProtectedRoute>
+              <YuyuShapeSorter />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/YuyuMemoryMatch"
+          element={
+            <ProtectedRoute>
+              <YuyuMemoryMatch />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/YuyuTicTacToe"
+          element={
+            <ProtectedRoute>
+              <YuyuTicTacToe />
             </ProtectedRoute>
           }
         />

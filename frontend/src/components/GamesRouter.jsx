@@ -100,7 +100,7 @@ const GamesRouter = ({ childName, onBack }) => {
           image={cloud}
           color="from-[#D4C9B3] to-[#C4B896]" 
           icon={<CloudRain size={20} />}
-          onClick={() => handleGameClick('/YuyuCloudAdventure')}
+          onClick={() => handleGameClick('/YuyuMemoryMatch')}
         />
       </div>
     </motion.div>

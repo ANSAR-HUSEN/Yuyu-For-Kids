@@ -192,7 +192,6 @@ const KidsDashboard = () => {
           streak: child.streak || 0
         });
       } else {
-        // Redirect to child login if no child selected
         navigate('/child-login');
       }
       setLoading(false);

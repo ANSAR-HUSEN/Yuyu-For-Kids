@@ -94,6 +94,39 @@ const incrementGamesPlayed = async (childId, parentId) => {
   });
 };
 
+const updateGameStats = async (childId, score, parentId) => {
+  const child = await prisma.child.findFirst({
+    where: { id: childId, parentId }
+  });
+  
+  if (!child) throw new Error('Child not found');
+  
+  const today = new Date();
+  const lastActive = child.lastActive ? new Date(child.lastActive) : null;
+  let newStreak = child.streak;
+  
+  if (lastActive) {
+    const diffDays = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      newStreak = child.streak + 1;
+    } else if (diffDays > 1) {
+      newStreak = 1;
+    }
+  } else {
+    newStreak = 1;
+  }
+  
+  return await prisma.child.update({
+    where: { id: childId },
+    data: {
+      gamesPlayed: { increment: 1 },
+      totalPoints: { increment: score },
+      lastActive: today,
+      streak: newStreak
+    }
+  });
+};
+
 const deleteChild = async (childId, parentId) => {
   const child = await prisma.child.findFirst({
     where: { id: childId, parentId }
@@ -117,5 +150,6 @@ module.exports = {
   updateChild, 
   updateChildStats,
   incrementGamesPlayed,
+  updateGameStats,
   deleteChild 
 };

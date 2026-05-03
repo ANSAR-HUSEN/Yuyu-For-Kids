@@ -1,6 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const api = {
+  // ============================================
+  // AUTH ENDPOINTS
+  // ============================================
+  
   async register(userData) {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -147,7 +151,10 @@ export const api = {
     return data;
   },
 
+  // ============================================
   // CHILD ENDPOINTS
+  // ============================================
+
   async addChild(childData) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -235,6 +242,197 @@ export const api = {
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || 'Failed to delete child');
+    }
+    
+    return data;
+  },
+
+  // ============================================
+  // GAME PROGRESS ENDPOINTS (NEW)
+  // ============================================
+
+  // Save progress for any game (Candy Crush, Shape Sorter, Number Pop, Tic Tac Toe, Cloud Adventure)
+  async saveGameProgress(childId, gameId, gameData) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const { score, pointsEarned, level, movesUsed, timeSpent, metadata } = gameData;
+    
+    const response = await fetch(`${API_URL}/games/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        childId,
+        gameId,
+        score,
+        pointsEarned,
+        level,
+        movesUsed,
+        timeSpent,
+        metadata
+      }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to save game progress');
+    }
+    
+    // Update local storage with latest XP
+    if (data.totalXP) {
+      localStorage.setItem(`child_${childId}_xp`, data.totalXP);
+    }
+    
+    return data;
+  },
+  
+  // Get all games progress for a child (returns all 5 games: candy_crush, shape_sorter, number_pop, tic_tac_toe, cloud_adventure)
+  async getAllGamesProgress(childId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/games/progress/${childId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get games progress');
+    }
+    
+    return data;
+  },
+  
+  // Get specific game progress (e.g., candy_crush, shape_sorter, number_pop, tic_tac_toe, cloud_adventure)
+  async getGameProgress(childId, gameId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/games/progress/${childId}/${gameId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get game progress');
+    }
+    
+    return data;
+  },
+  
+  // Get child's total stats (XP, streak, badges, games played)
+  async getChildStats(childId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/games/stats/${childId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get child stats');
+    }
+    
+    return data;
+  },
+  
+  // Get leaderboard for a specific game
+  async getLeaderboard(gameId, limit = 10) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/games/leaderboard/${gameId}?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get leaderboard');
+    }
+    
+    return data;
+  },
+  
+  // Award badge manually (for special achievements)
+  async awardBadge(childId, badgeName, source = 'manual') {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/games/badge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        childId,
+        badgeName,
+        source
+      }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to award badge');
+    }
+    
+    return data;
+  },
+
+  // ============================================
+  // GAME STATS ENDPOINT (Legacy - keep for compatibility)
+  // ============================================
+
+  async updateGameStats(childId, score) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`${API_URL}/children/${childId}/game-stats`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ score }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update game stats');
     }
     
     return data;

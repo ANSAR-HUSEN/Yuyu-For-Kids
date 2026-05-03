@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, Zap, ArrowLeft, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { Star, Heart, Zap, ArrowLeft, RefreshCw, Trophy, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 const YuyuNumberPop = () => {
   const navigate = useNavigate();
@@ -16,13 +17,83 @@ const YuyuNumberPop = () => {
   const [combo, setCombo] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-  const [soundOn, setSoundOn] = useState(true);
   const [blastingBalloon, setBlastingBalloon] = useState(null);
   const [showYayMessage, setShowYayMessage] = useState(false);
   const [showTryAgainMessage, setShowTryAgainMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recentQuestions, setRecentQuestions] = useState([]);
   const [totalQuestionsAnswered, setTotalQuestionsAnswered] = useState(0);
+  const [totalXP, setTotalXP] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [childId, setChildId] = useState(null);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+  const [currentBadge, setCurrentBadge] = useState(null);
+
+  useEffect(() => {
+    const storedChildId = localStorage.getItem('currentChildId');
+    if (storedChildId) {
+      setChildId(storedChildId);
+      loadGameProgress(storedChildId);
+    }
+    
+    const savedHighScore = localStorage.getItem('numberPopHighScore');
+    if (savedHighScore) setHighScore(parseInt(savedHighScore));
+    generateQuestion();
+  }, []);
+
+  const loadGameProgress = async (childId) => {
+    try {
+      const result = await api.getGameProgress(childId, 'number_pop');
+      if (result && result.level) {
+        setLevel(result.level || 1);
+        setTotalXP(result.exp || 0);
+        setHighScore(result.highScore || 0);
+      }
+      
+      const stats = await api.getChildStats(childId);
+      if (stats && stats.child) {
+        setTotalXP(stats.child.totalPoints || 0);
+      }
+    } catch (error) {
+      console.error('Error loading game progress:', error);
+    }
+  };
+
+  const saveProgress = async (pointsEarned, newLevel, finalScore) => {
+    if (!childId || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await api.saveGameProgress(childId, 'number_pop', {
+        score: finalScore,
+        pointsEarned: pointsEarned,
+        level: newLevel,
+        movesUsed: 0,
+        timeSpent: 0,
+        metadata: { combo: combo, questionsAnswered: totalQuestionsAnswered }
+      });
+      
+      if (result) {
+        setTotalXP(result.totalXP);
+        
+        if (result.badges && result.badges.length > 0) {
+          result.badges.forEach(badge => {
+            showBadgeNotification(badge);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showBadgeNotification = (badge) => {
+    setCurrentBadge(badge);
+    setShowBadgePopup(true);
+    setTimeout(() => setShowBadgePopup(false), 3000);
+  };
 
   const generateQuestion = () => {
     let attempts = 0;
@@ -113,26 +184,6 @@ const YuyuNumberPop = () => {
     setOptions(allOptions);
   };
 
-  useEffect(() => {
-    generateQuestion();
-    const savedHighScore = localStorage.getItem('numberPopHighScore');
-    if (savedHighScore) setHighScore(parseInt(savedHighScore));
-  }, []);
-
-  useEffect(() => {
-    const newLevel = Math.floor(score / 100) + 1;
-    if (newLevel !== level && newLevel <= 10) {
-      setLevel(newLevel);
-      playSound('levelUp');
-      showMessage(`Level ${newLevel}!`);
-    }
-  }, [score]);
-
-  const playSound = (type) => {
-    if (!soundOn) return;
-    console.log(`Playing sound: ${type}`);
-  };
-
   const showMessage = (message) => {
     setPopupMessage(message);
     setShowPopup(true);
@@ -146,7 +197,6 @@ const YuyuNumberPop = () => {
     setSelectedAnswer(selected);
     const correct = selected === question.answer;
     setIsCorrect(correct);
-    playSound(correct ? 'correct' : 'wrong');
 
     if (correct) {
       setBlastingBalloon(index);
@@ -163,6 +213,17 @@ const YuyuNumberPop = () => {
         localStorage.setItem('numberPopHighScore', newScore);
       }
       
+      const newLevel = Math.floor(newScore / 100) + 1;
+      let levelUpsCount = 0;
+      
+      if (newLevel > level && newLevel <= 10) {
+        levelUpsCount = newLevel - level;
+        setLevel(newLevel);
+        showMessage(`Level ${newLevel}!`);
+      }
+      
+      await saveProgress(pointsEarned + (levelUpsCount * 50), newLevel, newScore);
+      
       setTimeout(() => {
         setShowYayMessage(false);
       }, 800);
@@ -176,19 +237,19 @@ const YuyuNumberPop = () => {
       }, 600);
     } else {
       setShowTryAgainMessage(true);
-      setLives(lives - 1);
+      const newLives = lives - 1;
+      setLives(newLives);
       setCombo(0);
+      
+      await saveProgress(0, level, score);
       
       setTimeout(() => {
         setShowTryAgainMessage(false);
       }, 1000);
       
       setTimeout(() => {
-        if (lives - 1 === 0) {
-          playSound('gameOver');
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
+        if (newLives === 0) {
+          saveProgress(0, level, score);
         } else {
           refreshOptions();
           setSelectedAnswer(null);
@@ -199,7 +260,9 @@ const YuyuNumberPop = () => {
     }
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
+    await saveProgress(0, level, score);
+    
     setScore(0);
     setLives(3);
     setLevel(1);
@@ -245,24 +308,25 @@ const YuyuNumberPop = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Star size={20} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown">{score}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Star size={16} className="text-gold fill-gold" />
+            <span className="font-bold text-darkBrown text-sm">{score}</span>
           </div>
-          <div className="flex items-center gap-2 bg-cream rounded-full px-4 py-2">
-            <Heart size={20} className="text-softPink" />
-            <span className="font-bold text-darkBrown">{lives}</span>
+          <div className="flex items-center gap-2 bg-cream rounded-full px-3 py-1.5">
+            <Heart size={16} className="text-softPink fill-softPink" />
+            <span className="font-bold text-darkBrown text-sm">{lives}</span>
           </div>
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Zap size={20} className="text-gold" />
-            <span className="font-bold text-darkBrown">x{combo}</span>
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Zap size={14} className="text-gold" />
+            <span className="font-bold text-gold text-xs">x{combo}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-blush rounded-full px-3 py-1.5">
+            <Award size={14} className="text-gold" />
+            <span className="font-bold text-darkBrown text-xs">{totalXP} XP</span>
           </div>
           <button onClick={resetGame} className="p-2 rounded-full hover:bg-cream transition-colors">
-            <RefreshCw size={20} className="text-warmBrown" />
-          </button>
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full hover:bg-cream transition-colors">
-            {soundOn ? <Volume2 size={20} className="text-warmBrown" /> : <VolumeX size={20} className="text-warmBrown" />}
+            <RefreshCw size={18} className="text-warmBrown" />
           </button>
         </div>
       </nav>
@@ -345,6 +409,24 @@ const YuyuNumberPop = () => {
         </div>
 
         <AnimatePresence>
+          {showBadgePopup && currentBadge && (
+            <motion.div
+              initial={{ scale: 0, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0, y: -50, opacity: 0 }}
+              className="fixed top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            >
+              <div className="bg-gradient-to-r from-gold to-softPink rounded-2xl px-8 py-6 shadow-2xl border-4 border-cream text-center">
+                <Trophy size={48} className="text-white mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">Badge Earned!</p>
+                <p className="text-xl text-white mt-1">{currentBadge.name}</p>
+                <p className="text-sm text-white/90 mt-1">+{currentBadge.xpBonus} XP</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
           {showYayMessage && (
             <motion.div
               initial={{ scale: 0, y: 50, opacity: 0 }}
@@ -379,7 +461,7 @@ const YuyuNumberPop = () => {
         </AnimatePresence>
 
         <AnimatePresence>
-          {showPopup && !showYayMessage && !showTryAgainMessage && (
+          {showPopup && !showYayMessage && !showTryAgainMessage && !showBadgePopup && (
             <motion.div
               initial={{ scale: 0, y: 50, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -413,7 +495,7 @@ const YuyuNumberPop = () => {
                   Play Again
                 </button>
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/kids-dashboard')}
                   className="flex-1 px-4 py-3 bg-cream text-darkBrown rounded-xl font-bold border border-peach"
                 >
                   Exit

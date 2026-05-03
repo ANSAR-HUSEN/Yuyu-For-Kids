@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, ArrowLeft, Volume2, VolumeX, RefreshCw, Trophy } from 'lucide-react';
+import { Star, Heart, ArrowLeft, Volume2, VolumeX, RefreshCw, Trophy, Zap, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 const YuyuTicTacToe = () => {
   const navigate = useNavigate();
@@ -19,6 +20,11 @@ const YuyuTicTacToe = () => {
   const [popupType, setPopupType] = useState('');
   const [soundOn, setSoundOn] = useState(true);
   const [combo, setCombo] = useState(0);
+  const [totalXP, setTotalXP] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [childId, setChildId] = useState(null);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+  const [currentBadge, setCurrentBadge] = useState(null);
 
   const winningCombinations = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -27,14 +33,70 @@ const YuyuTicTacToe = () => {
   ];
 
   useEffect(() => {
+    const storedChildId = localStorage.getItem('currentChildId');
+    if (storedChildId) {
+      setChildId(storedChildId);
+      loadGameProgress(storedChildId);
+    }
+    
     const savedHighScore = localStorage.getItem('tictactoeHighScore');
     if (savedHighScore) setHighScore(parseInt(savedHighScore));
     resetBoard();
   }, []);
 
-  const playSound = (type) => {
-    if (!soundOn) return;
-    console.log(`Playing sound: ${type}`);
+  const loadGameProgress = async (childId) => {
+    try {
+      const result = await api.getGameProgress(childId, 'tic_tac_toe');
+      if (result && result.level) {
+        setLevel(result.level || 1);
+        setTotalXP(result.exp || 0);
+        setHighScore(result.highScore || 0);
+      }
+      
+      const stats = await api.getChildStats(childId);
+      if (stats && stats.child) {
+        setTotalXP(stats.child.totalPoints || 0);
+      }
+    } catch (error) {
+      console.error('Error loading game progress:', error);
+    }
+  };
+
+  const saveProgress = async (pointsEarned, newLevel, finalScore, isWin) => {
+    if (!childId || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await api.saveGameProgress(childId, 'tic_tac_toe', {
+        score: finalScore,
+        pointsEarned: pointsEarned,
+        level: newLevel,
+        movesUsed: 0,
+        timeSpent: 0,
+        metadata: { wins: isWin ? 1 : 0, combo: combo }
+      });
+      
+      if (result) {
+        setTotalXP(result.totalXP);
+        
+        if (result.badges && result.badges.length > 0) {
+          result.badges.forEach(badge => {
+            showBadgeNotification(badge);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showBadgeNotification = (badge) => {
+    setCurrentBadge(badge);
+    setShowBadgePopup(true);
+    setTimeout(() => setShowBadgePopup(false), 3000);
+    showMessage(`🏆 ${badge.name}! +${badge.xpBonus} XP`, 'win');
   };
 
   const showMessage = (message, type) => {
@@ -84,7 +146,6 @@ const YuyuTicTacToe = () => {
             setIsPlayerTurn(true);
           }
         }
-        playSound('move');
       }, 500);
     }
   };
@@ -147,7 +208,6 @@ const YuyuTicTacToe = () => {
   const handleCellClick = (index) => {
     if (!isPlayerTurn || gameOver || board[index]) return;
     
-    playSound('move');
     const newBoard = [...board];
     newBoard[index] = 'X';
     setBoard(newBoard);
@@ -160,7 +220,7 @@ const YuyuTicTacToe = () => {
     }
   };
 
-  const handleGameEnd = (winner, line) => {
+  const handleGameEnd = async (winner, line) => {
     setWinningLine(line);
     setGameOver(true);
     
@@ -171,7 +231,6 @@ const YuyuTicTacToe = () => {
       setCombo(combo + 1);
       setWinner('You win!');
       showMessage(`+${pointsEarned} points! Amazing!`, 'win');
-      playSound('win');
       
       if (newScore > highScore) {
         setHighScore(newScore);
@@ -181,25 +240,27 @@ const YuyuTicTacToe = () => {
       const newLevel = Math.floor(newScore / 100) + 1;
       if (newLevel > level && newLevel <= 10) {
         setLevel(newLevel);
-        playSound('levelUp');
         showMessage(`Level ${newLevel}!`, 'level');
+        await saveProgress(pointsEarned, newLevel, newScore, true);
+      } else {
+        await saveProgress(pointsEarned, level, newScore, true);
       }
     } else if (winner === 'O') {
-      setLives(lives - 1);
+      const newLives = lives - 1;
+      setLives(newLives);
       setCombo(0);
       setWinner('Computer wins!');
       showMessage('Try again!', 'lose');
-      playSound('lose');
       
-      if (lives - 1 === 0) {
-        setTimeout(() => {
-          playSound('gameOver');
-        }, 1000);
+      await saveProgress(0, level, score, false);
+      
+      if (newLives === 0) {
+        await saveProgress(0, level, score, false);
       }
     } else if (winner === 'tie') {
       setWinner("It's a tie!");
       showMessage("Good game!", 'tie');
-      playSound('tie');
+      await saveProgress(0, level, score, false);
     }
   };
 
@@ -211,7 +272,9 @@ const YuyuTicTacToe = () => {
     setWinningLine([]);
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
+    await saveProgress(0, level, score, false);
+    
     setScore(0);
     setLives(3);
     setLevel(1);
@@ -261,23 +324,28 @@ const YuyuTicTacToe = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Star size={20} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown">{score}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Star size={16} className="text-gold fill-gold" />
+            <span className="font-bold text-darkBrown text-sm">{score}</span>
           </div>
-          <div className="flex items-center gap-2 bg-cream rounded-full px-4 py-2">
-            <Heart size={20} className="text-softPink" />
-            <span className="font-bold text-darkBrown">{lives}</span>
+          <div className="flex items-center gap-2 bg-cream rounded-full px-3 py-1.5">
+            <Heart size={16} className="text-softPink fill-softPink" />
+            <span className="font-bold text-darkBrown text-sm">{lives}</span>
           </div>
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <span className="font-bold text-gold text-sm">x{combo}</span>
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Zap size={14} className="text-gold" />
+            <span className="font-bold text-gold text-xs">x{combo}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-blush rounded-full px-3 py-1.5">
+            <Award size={14} className="text-gold" />
+            <span className="font-bold text-darkBrown text-xs">{totalXP}</span>
           </div>
           <button onClick={resetGame} className="p-2 rounded-full hover:bg-cream transition-colors">
-            <RefreshCw size={20} className="text-warmBrown" />
+            <RefreshCw size={18} className="text-warmBrown" />
           </button>
           <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full hover:bg-cream transition-colors">
-            {soundOn ? <Volume2 size={20} className="text-warmBrown" /> : <VolumeX size={20} className="text-warmBrown" />}
+            {soundOn ? <Volume2 size={18} className="text-warmBrown" /> : <VolumeX size={18} className="text-warmBrown" />}
           </button>
         </div>
       </nav>
@@ -285,7 +353,7 @@ const YuyuTicTacToe = () => {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-6">
           <div className="inline-block bg-cream/80 backdrop-blur rounded-full px-6 py-2">
-            <p className="text-warmBrown font-bold">
+            <p className="text-warmBrown font-bold text-sm">
               Level {level} • {isPlayerTurn && !gameOver ? 'Your turn!' : winner ? 'Game Over' : 'Computer thinking...'}
             </p>
           </div>
@@ -326,7 +394,25 @@ const YuyuTicTacToe = () => {
         </div>
 
         <AnimatePresence>
-          {showPopup && (
+          {showBadgePopup && currentBadge && (
+            <motion.div
+              initial={{ scale: 0, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0, y: -50, opacity: 0 }}
+              className="fixed top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            >
+              <div className="bg-gradient-to-r from-gold to-softPink rounded-2xl px-8 py-6 shadow-2xl border-4 border-cream text-center">
+                <Trophy size={48} className="text-white mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">Badge Earned!</p>
+                <p className="text-xl text-white mt-1">{currentBadge.name}</p>
+                <p className="text-sm text-white/90 mt-1">+{currentBadge.xpBonus} XP</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showPopup && !showBadgePopup && (
             <motion.div
               initial={{ scale: 0, y: 50, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -356,7 +442,7 @@ const YuyuTicTacToe = () => {
               <h2 className="text-3xl font-bold text-darkBrown mb-2">Game Over</h2>
               <p className="text-warmBrown mb-4">You reached Level {level} with {score} points!</p>
               {score === highScore && score > 0 && (
-                <p className="text-gold font-bold mb-4">New High Score!</p>
+                <p className="text-gold font-bold mb-4">New High Score! 🏆</p>
               )}
               <div className="flex gap-3">
                 <button
@@ -366,7 +452,7 @@ const YuyuTicTacToe = () => {
                   Play Again
                 </button>
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/kids-dashboard')}
                   className="flex-1 px-4 py-3 bg-cream text-darkBrown rounded-xl font-bold border border-peach"
                 >
                   Exit

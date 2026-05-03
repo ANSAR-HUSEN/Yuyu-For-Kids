@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, ArrowLeft, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { Star, Heart, ArrowLeft, RefreshCw, Trophy, Zap, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 const YuyuCandyCrush = () => {
   const navigate = useNavigate();
@@ -13,9 +14,14 @@ const YuyuCandyCrush = () => {
   const [selectedCol, setSelectedCol] = useState(null);
   const [message, setMessage] = useState('');
   const [showMessage, setShowMessage] = useState(false);
-  const [soundOn, setSoundOn] = useState(true);
   const [movesLeft, setMovesLeft] = useState(15);
   const [gameOver, setGameOver] = useState(false);
+  const [totalXP, setTotalXP] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [childId, setChildId] = useState(null);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+  const [currentBadge, setCurrentBadge] = useState(null);
+  const [combo, setCombo] = useState(0);
 
   const candies = ['🍬', '🍬', '🍬', '🍬', '🍬', '🍬'];
   const candyColors = [
@@ -28,10 +34,70 @@ const YuyuCandyCrush = () => {
   ];
 
   useEffect(() => {
+    const storedChildId = localStorage.getItem('currentChildId');
+    if (storedChildId) {
+      setChildId(storedChildId);
+      loadGameProgress(storedChildId);
+    }
+    
     const saved = localStorage.getItem('candyHighScore');
     if (saved) setHighScore(parseInt(saved));
     initBoard();
   }, []);
+
+  const loadGameProgress = async (childId) => {
+    try {
+      const result = await api.getGameProgress(childId, 'candy_crush');
+      if (result && result.level) {
+        setLevel(result.level || 1);
+        setTotalXP(result.exp || 0);
+        setHighScore(result.highScore || 0);
+      }
+      
+      const stats = await api.getChildStats(childId);
+      if (stats && stats.child) {
+        setTotalXP(stats.child.totalPoints || 0);
+      }
+    } catch (error) {
+      console.error('Error loading game progress:', error);
+    }
+  };
+
+  const saveProgress = async (pointsEarned, newLevel, finalScore) => {
+    if (!childId || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await api.saveGameProgress(childId, 'candy_crush', {
+        score: finalScore,
+        pointsEarned: pointsEarned,
+        level: newLevel,
+        movesUsed: 15 - movesLeft,
+        timeSpent: 0,
+        metadata: { combo: combo }
+      });
+      
+      if (result) {
+        setTotalXP(result.totalXP);
+        
+        if (result.badges && result.badges.length > 0) {
+          result.badges.forEach(badge => {
+            showBadgeNotification(badge);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showBadgeNotification = (badge) => {
+    setCurrentBadge(badge);
+    setShowBadgePopup(true);
+    setTimeout(() => setShowBadgePopup(false), 3000);
+  };
 
   const getCandyCount = () => {
     if (level <= 2) return 3;
@@ -128,9 +194,9 @@ const YuyuCandyCrush = () => {
     return newBoard;
   };
 
-  const processMatches = async (currentBoard) => {
+  const processMatches = async (currentBoard, pointsFromMatch) => {
     let newBoard = [...currentBoard.map(row => [...row])];
-    let totalPoints = 0;
+    let totalPoints = pointsFromMatch || 0;
     let hasMatches = true;
     
     while (hasMatches) {
@@ -160,18 +226,23 @@ const YuyuCandyCrush = () => {
       }
       
       const newLevel = Math.floor(newScore / 100) + 1;
+      let levelUpsCount = 0;
+      
       if (newLevel > level) {
+        levelUpsCount = newLevel - level;
         setLevel(newLevel);
         setMovesLeft(15);
         showMessageFunc(`Level ${newLevel}!`, 'level');
       }
+      
+      await saveProgress(totalPoints + (levelUpsCount * 50), newLevel, newScore);
     }
     
     return newBoard;
   };
 
   const handleCandyClick = async (row, col) => {
-    if (gameOver) return;
+    if (gameOver || isSaving) return;
     
     if (selectedRow === null) {
       setSelectedRow(row);
@@ -191,14 +262,18 @@ const YuyuCandyCrush = () => {
           setBoard(newBoard);
           const newMoves = movesLeft - 1;
           setMovesLeft(newMoves);
+          setCombo(combo + 1);
           
-          const processedBoard = await processMatches(newBoard);
+          const processedBoard = await processMatches(newBoard, 0);
           setBoard(processedBoard);
           
           if (newMoves <= 0) {
+            await saveProgress(0, level, score);
             setGameOver(true);
             showMessageFunc('Game Over!', 'lose');
           }
+        } else {
+          setCombo(0);
         }
         
         setSelectedRow(null);
@@ -216,19 +291,17 @@ const YuyuCandyCrush = () => {
     setTimeout(() => setShowMessage(false), 1500);
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
+    await saveProgress(0, level, score);
+    
     setScore(0);
     setLevel(1);
     setMovesLeft(15);
     setGameOver(false);
     setSelectedRow(null);
     setSelectedCol(null);
+    setCombo(0);
     initBoard();
-  };
-
-  const playSound = (type) => {
-    if (!soundOn) return;
-    console.log(`Sound: ${type}`);
   };
 
   const getCandyColor = (candyId) => {
@@ -251,22 +324,25 @@ const YuyuCandyCrush = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Star size={20} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown">{score}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Star size={16} className="text-gold fill-gold" />
+            <span className="font-bold text-darkBrown text-sm">{score}</span>
           </div>
-          <div className="flex items-center gap-2 bg-cream rounded-full px-4 py-2">
-            <span className="font-bold text-warmBrown">🎯 {Math.floor(score / 100) * 100 + 100}</span>
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Zap size={14} className="text-gold" />
+            <span className="font-bold text-gold text-xs">{movesLeft}</span>
           </div>
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <span className="font-bold text-gold">🎮 {movesLeft}</span>
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Zap size={14} className="text-gold" />
+            <span className="font-bold text-gold text-xs">x{combo}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-blush rounded-full px-3 py-1.5">
+            <Award size={14} className="text-gold" />
+            <span className="font-bold text-darkBrown text-xs">{totalXP} XP</span>
           </div>
           <button onClick={resetGame} className="p-2 rounded-full hover:bg-cream">
-            <RefreshCw size={20} className="text-warmBrown" />
-          </button>
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full hover:bg-cream">
-            {soundOn ? <Volume2 size={20} className="text-warmBrown" /> : <VolumeX size={20} className="text-warmBrown" />}
+            <RefreshCw size={18} className="text-warmBrown" />
           </button>
         </div>
       </nav>
@@ -297,12 +373,28 @@ const YuyuCandyCrush = () => {
             ))
           ))}
         </div>
-
-    
       </div>
 
       <AnimatePresence>
-        {showMessage && (
+        {showBadgePopup && currentBadge && (
+          <motion.div
+            initial={{ scale: 0, y: 50, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0, y: -50, opacity: 0 }}
+            className="fixed top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+          >
+            <div className="bg-gradient-to-r from-gold to-softPink rounded-2xl px-8 py-6 shadow-2xl border-4 border-cream text-center">
+              <Trophy size={48} className="text-white mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">Badge Earned!</p>
+              <p className="text-xl text-white mt-1">{currentBadge.name}</p>
+              <p className="text-sm text-white/90 mt-1">+{currentBadge.xpBonus} XP</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMessage && !showBadgePopup && (
           <motion.div
             initial={{ scale: 0, y: 50 }}
             animate={{ scale: 1, y: 0 }}
@@ -328,7 +420,7 @@ const YuyuCandyCrush = () => {
               <button onClick={resetGame} className="flex-1 px-4 py-3 bg-softPink text-cream rounded-xl font-bold">
                 Play Again
               </button>
-              <button onClick={() => navigate('/dashboard')} className="flex-1 px-4 py-3 bg-cream text-darkBrown rounded-xl font-bold border border-peach">
+              <button onClick={() => navigate('/kids-dashboard')} className="flex-1 px-4 py-3 bg-cream text-darkBrown rounded-xl font-bold border border-peach">
                 Exit
               </button>
             </div>

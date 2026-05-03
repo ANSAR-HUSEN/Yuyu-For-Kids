@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, ArrowLeft, Volume2, VolumeX, RefreshCw, Circle, Square, Triangle, Hexagon, Star as StarIcon, Heart as HeartIcon, Moon, Sun, Cloud, Apple } from 'lucide-react';
+import { Star, Heart, ArrowLeft, RefreshCw, Circle, Square, Triangle, Hexagon, Star as StarIcon, Heart as HeartIcon, Moon, Sun, Cloud, Apple, Trophy, Zap, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
 
 const YuyuShapeSorter = () => {
   const navigate = useNavigate();
@@ -13,9 +14,13 @@ const YuyuShapeSorter = () => {
   const [shapeHoles, setShapeHoles] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showWrong, setShowWrong] = useState(false);
-  const [soundOn, setSoundOn] = useState(true);
   const [combo, setCombo] = useState(0);
   const [wrongMessage, setWrongMessage] = useState('');
+  const [totalXP, setTotalXP] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [childId, setChildId] = useState(null);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+  const [currentBadge, setCurrentBadge] = useState(null);
 
   const allShapes = [
     { name: 'circle', icon: Circle, color: 'text-pink-500', bgColor: 'bg-pink-100', borderColor: 'border-pink-400' },
@@ -31,10 +36,70 @@ const YuyuShapeSorter = () => {
   ];
 
   useEffect(() => {
+    const storedChildId = localStorage.getItem('currentChildId');
+    if (storedChildId) {
+      setChildId(storedChildId);
+      loadGameProgress(storedChildId);
+    }
+    
     const savedHighScore = localStorage.getItem('shapeSorterHighScore');
     if (savedHighScore) setHighScore(parseInt(savedHighScore));
     initializeLevel();
   }, []);
+
+  const loadGameProgress = async (childId) => {
+    try {
+      const result = await api.getGameProgress(childId, 'shape_sorter');
+      if (result && result.level) {
+        setLevel(result.level || 1);
+        setTotalXP(result.exp || 0);
+        setHighScore(result.highScore || 0);
+      }
+      
+      const stats = await api.getChildStats(childId);
+      if (stats && stats.child) {
+        setTotalXP(stats.child.totalPoints || 0);
+      }
+    } catch (error) {
+      console.error('Error loading game progress:', error);
+    }
+  };
+
+  const saveProgress = async (pointsEarned, newLevel, finalScore) => {
+    if (!childId || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await api.saveGameProgress(childId, 'shape_sorter', {
+        score: finalScore,
+        pointsEarned: pointsEarned,
+        level: newLevel,
+        movesUsed: 0,
+        timeSpent: 0,
+        metadata: { combo: combo }
+      });
+      
+      if (result) {
+        setTotalXP(result.totalXP);
+        
+        if (result.badges && result.badges.length > 0) {
+          result.badges.forEach(badge => {
+            showBadgeNotification(badge);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const showBadgeNotification = (badge) => {
+    setCurrentBadge(badge);
+    setShowBadgePopup(true);
+    setTimeout(() => setShowBadgePopup(false), 3000);
+  };
 
   const initializeLevel = () => {
     let numShapes = 2;
@@ -58,13 +123,8 @@ const YuyuShapeSorter = () => {
     setCurrentShape(shapes[randomIndex]);
   };
 
-  const playSound = (type) => {
-    if (!soundOn) return;
-    console.log(`Playing sound: ${type}`);
-  };
-
   const handleShapeClick = (clickedShape, index) => {
-    if (showSuccess || showWrong) return;
+    if (showSuccess || showWrong || isSaving) return;
 
     if (clickedShape.name === currentShape.name) {
       handleCorrect(index);
@@ -73,8 +133,7 @@ const YuyuShapeSorter = () => {
     }
   };
 
-  const handleCorrect = (matchedIndex) => {
-    playSound('correct');
+  const handleCorrect = async (matchedIndex) => {
     setShowSuccess(true);
     
     const pointsEarned = 10 + (combo * 2);
@@ -88,10 +147,14 @@ const YuyuShapeSorter = () => {
     }
     
     const newLevel = Math.floor(newScore / 100) + 1;
+    let levelUpsCount = 0;
+    
     if (newLevel > level && newLevel <= 20) {
+      levelUpsCount = newLevel - level;
       setLevel(newLevel);
-      playSound('levelUp');
     }
+    
+    await saveProgress(pointsEarned + (levelUpsCount * 50), newLevel, newScore);
     
     setTimeout(() => {
       setShowSuccess(false);
@@ -109,22 +172,26 @@ const YuyuShapeSorter = () => {
     }, 600);
   };
 
-  const handleWrong = (wrongShapeName) => {
-    playSound('wrong');
+  const handleWrong = async (wrongShapeName) => {
     setWrongMessage(`That's a ${wrongShapeName}! Find the ${currentShape.name}!`);
     setShowWrong(true);
-    setLives(lives - 1);
+    const newLives = lives - 1;
+    setLives(newLives);
     setCombo(0);
+    
+    await saveProgress(0, level, score);
     
     setTimeout(() => {
       setShowWrong(false);
-      if (lives - 1 === 0) {
-        playSound('gameOver');
+      if (newLives === 0) {
+        saveProgress(0, level, score);
       }
     }, 1500);
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
+    await saveProgress(0, level, score);
+    
     setScore(0);
     setLives(3);
     setLevel(1);
@@ -164,23 +231,25 @@ const YuyuShapeSorter = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <Star size={20} className="text-gold fill-gold" />
-            <span className="font-bold text-darkBrown">{score}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Star size={16} className="text-gold fill-gold" />
+            <span className="font-bold text-darkBrown text-sm">{score}</span>
           </div>
-          <div className="flex items-center gap-2 bg-cream rounded-full px-4 py-2">
-            <Heart size={20} className="text-softPink" />
-            <span className="font-bold text-darkBrown">{lives}</span>
+          <div className="flex items-center gap-2 bg-cream rounded-full px-3 py-1.5">
+            <Heart size={16} className="text-softPink fill-softPink" />
+            <span className="font-bold text-darkBrown text-sm">{lives}</span>
           </div>
-          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-4 py-2">
-            <span className="font-bold text-gold text-sm">x{combo}</span>
+          <div className="flex items-center gap-2 bg-lightYellow rounded-full px-3 py-1.5">
+            <Zap size={14} className="text-gold" />
+            <span className="font-bold text-gold text-xs">x{combo}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-blush rounded-full px-3 py-1.5">
+            <Award size={14} className="text-gold" />
+            <span className="font-bold text-darkBrown text-xs">{totalXP} XP</span>
           </div>
           <button onClick={resetGame} className="p-2 rounded-full hover:bg-cream transition-colors">
-            <RefreshCw size={20} className="text-warmBrown" />
-          </button>
-          <button onClick={() => setSoundOn(!soundOn)} className="p-2 rounded-full hover:bg-cream transition-colors">
-            {soundOn ? <Volume2 size={20} className="text-warmBrown" /> : <VolumeX size={20} className="text-warmBrown" />}
+            <RefreshCw size={18} className="text-warmBrown" />
           </button>
         </div>
       </nav>
@@ -225,7 +294,25 @@ const YuyuShapeSorter = () => {
         )}
 
         <AnimatePresence>
-          {showSuccess && (
+          {showBadgePopup && currentBadge && (
+            <motion.div
+              initial={{ scale: 0, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0, y: -50, opacity: 0 }}
+              className="fixed top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            >
+              <div className="bg-gradient-to-r from-gold to-softPink rounded-2xl px-8 py-6 shadow-2xl border-4 border-cream text-center">
+                <Trophy size={48} className="text-white mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">Badge Earned!</p>
+                <p className="text-xl text-white mt-1">{currentBadge.name}</p>
+                <p className="text-sm text-white/90 mt-1">+{currentBadge.xpBonus} XP</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showSuccess && !showBadgePopup && (
             <motion.div
               initial={{ scale: 0, y: 50 }}
               animate={{ scale: 1, y: 0 }}
@@ -268,7 +355,7 @@ const YuyuShapeSorter = () => {
               <h2 className="text-3xl font-bold text-darkBrown mb-2">Game Over</h2>
               <p className="text-warmBrown mb-4">You reached Level {level} with {score} points!</p>
               {score === highScore && score > 0 && (
-                <p className="text-gold font-bold mb-4">New High Score!</p>
+                <p className="text-gold font-bold mb-4">New High Score! 🏆</p>
               )}
               <div className="flex gap-3">
                 <button
@@ -278,7 +365,7 @@ const YuyuShapeSorter = () => {
                   Play Again
                 </button>
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/kids-dashboard')}
                   className="flex-1 px-4 py-3 bg-cream text-darkBrown rounded-xl font-bold border border-peach"
                 >
                   Exit

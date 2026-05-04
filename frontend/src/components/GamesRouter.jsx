@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Gamepad2, Trophy, Flame, ArrowLeft,
-  Shapes, Target, Heart, Binary, CloudRain
-} from 'lucide-react';
+import { Gamepad2, ArrowLeft, Shapes, Target, Heart, Binary, Puzzle } from 'lucide-react';
 import shape from '../assets/shape.png';
 import pop from '../assets/pop.png';
 import candy from '../assets/candy.png';
 import tictac from '../assets/tictac.png';
-import cloud from '../assets/cloud.png';
+import memory from '../assets/memory.png';
 
-const GamesRouter = ({ childName, onBack }) => {
+const GamesRouter = ({ onBack }) => {
   const navigate = useNavigate();
 
   const handleGameClick = (gamePath) => {
@@ -39,16 +36,6 @@ const GamesRouter = ({ childName, onBack }) => {
               Games
             </h1>
             <p className="text-warmBrown text-sm mt-1">Choose a game to play!</p>
-          </div>
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-1 bg-blush px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-peach">
-              <Flame size={12} className="text-orange-500" />
-              <span className="text-xs font-bold text-darkBrown">7 days</span>
-            </div>
-            <div className="flex items-center gap-1 bg-gold/20 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-gold/30">
-              <Trophy size={12} className="text-gold" />
-              <span className="text-xs font-bold text-darkBrown">Level 5</span>
-            </div>
           </div>
         </div>
       </div>
@@ -95,11 +82,11 @@ const GamesRouter = ({ childName, onBack }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
         <GameCard
-          title="Cloud Adventure"
-          description="Catch raindrops, avoid bombs! Help Yuyu survive in the sky!"
-          image={cloud}
-          color="from-[#D4C9B3] to-[#C4B896]" 
-          icon={<CloudRain size={20} />}
+          title="Memory Match"
+          description="Train your brain! Watch, remember, repeat!"
+          image={memory}
+          color="from-slate-400 to-slate-500"
+          icon={<Puzzle size={20} />}
           onClick={() => handleGameClick('/YuyuMemoryMatch')}
         />
       </div>

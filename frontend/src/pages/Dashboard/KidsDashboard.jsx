@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, BookOpen, Puzzle, Palette, Zap, TrendingUp,
-  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper
+  Trophy, Heart, Home, Gamepad2, Flame, User, Menu, X, PartyPopper,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import GamesRouter from '../../components/GamesRouter';
@@ -13,7 +13,7 @@ const DashboardCard = ({ icon: Icon, title, value, color, delay, onClick }) => {
 
   const colorMap = {
     softPink: '#FF9EAA',
-    marine:  '#2E6B8F',
+    marine: '#2E6B8F',
     gold: '#FFB347',
   };
 
@@ -209,15 +209,14 @@ const KidsDashboard = () => {
   const quickActions = [
     { icon: Gamepad2, title: "Learning Games", color: "softPink", delay: 0.3, onClick: () => setActiveNav('games') },
     { icon: BookOpen, title: "Story Time", color: "marine", delay: 0.35, onClick: () => setActiveNav('stories') },
-    { icon: Zap, title: "Fun Quizzes", color: "peach", delay: 0.4, onClick: () => setActiveNav('quiz') },
-    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => setActiveNav('draw') }
+   
+    { icon: Palette, title: "Creativity Zone", color: "black", delay: 0.45, onClick: () => navigate('/YuyuDrawing') }
   ];
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'games', icon: Gamepad2, label: 'Games' },
     { id: 'stories', icon: BookOpen, label: 'Stories' },
-    { id: 'quiz', icon: Zap, label: 'Quiz' },
     { id: 'draw', icon: Palette, label: 'Draw' },
     { id: 'progress', icon: TrendingUp, label: 'Progress' }
   ];
@@ -289,7 +288,6 @@ const KidsDashboard = () => {
             </div>
           </div>
 
-          {/* Logout button for kids */}
           <div className="mt-8 text-center">
             <button
               onClick={handleLogout}
@@ -300,6 +298,21 @@ const KidsDashboard = () => {
           </div>
         </div>
       );
+    }
+
+    if (activeNav === 'painter') {
+      navigate('/YuyuVirtualPainter');
+      return null;
+    }
+
+    if (activeNav === 'draw') {
+      navigate('/YuyuDrawing');
+      return null;
+    }
+
+    if (activeNav === 'stories') {
+      navigate('/books');
+      return null;
     }
 
     return (
@@ -411,7 +424,13 @@ const KidsDashboard = () => {
                       key={item.id}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => {
-                        setActiveNav(item.id);
+                        if (item.id === 'painter') {
+                          navigate('/YuyuVirtualPainter');
+                        } else if (item.id === 'draw') {
+                          navigate('/YuyuDrawing');
+                        } else {
+                          setActiveNav(item.id);
+                        }
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 ${
@@ -451,7 +470,13 @@ const KidsDashboard = () => {
                   key={item.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setActiveNav(item.id)}
+                  onClick={() => {
+                    if (item.id === 'draw') {
+                      navigate('/YuyuDrawing');
+                    }  else {
+                      setActiveNav(item.id);
+                    }
+                  }}
                   className={`relative w-full mb-4 p-3 rounded-2xl transition-all duration-300 group ${
                     isActive ? 'bg-softPink/20 shadow-md' : 'hover:bg-white/50'
                   }`}
